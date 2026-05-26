@@ -1,26 +1,104 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ------------------------------------------------------------------ *
+ * IBC — Design tokens
+ * Brand: charcoal/ink + industrial orange (from the IBC logo)
+ * ------------------------------------------------------------------ */
+@theme {
+  /* Brand orange */
+  --color-brand-50: #fff4ed;
+  --color-brand-100: #ffe6d5;
+  --color-brand-200: #fec6aa;
+  --color-brand-300: #fd9d74;
+  --color-brand-400: #fb6a3c;
+  --color-brand-500: #f26a21;
+  --color-brand-600: #e2530f;
+  --color-brand-700: #bb3e0e;
+  --color-brand-800: #943314;
+  --color-brand-900: #772d14;
+
+  /* Ink / charcoal (matches logo body) */
+  --color-ink-50: #f6f6f6;
+  --color-ink-100: #e7e7e7;
+  --color-ink-200: #d1d1d1;
+  --color-ink-300: #b0b0b0;
+  --color-ink-400: #888888;
+  --color-ink-500: #6d6d6d;
+  --color-ink-600: #5d5d5d;
+  --color-ink-700: #4f4f4f;
+  --color-ink-800: #2c2c2c;
+  --color-ink-900: #1c1c1c;
+  --color-ink-950: #121212;
+
+  --color-background: #ffffff;
+  --color-foreground: #1c1c1c;
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-oswald);
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.12);
+  --shadow-lift: 0 12px 40px -16px rgb(242 106 33 / 0.35);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Display headings carry the industrial, condensed logo feel */
+.font-display {
+  font-family: var(--font-display), "Arial Narrow", sans-serif;
+  letter-spacing: 0.01em;
+}
+
+/* Fade-up used when the announcement bar swaps messages */
+@keyframes ibc-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-announce {
+  animation: ibc-fade 0.45s ease-out;
+}
+
+/* Continuous, seamless horizontal scroll for the Partners logo strip.
+   Two identical sets sit side by side; shifting by -50% loops invisibly. */
+@keyframes ibc-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-marquee {
+  animation: ibc-marquee var(--marquee-duration, 30s) linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}
+
+/* Subtle utility for the diagonal "industrial" accent strips */
+.bg-hazard {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-brand-500) 0,
+    var(--color-brand-500) 12px,
+    var(--color-ink-900) 12px,
+    var(--color-ink-900) 24px
+  );
 }
