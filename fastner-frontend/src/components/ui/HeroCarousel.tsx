@@ -82,7 +82,7 @@ const N = SLIDES.length;
  */
 const TRACK: Slide[] = [SLIDES[N - 1], ...SLIDES, SLIDES[0]];
 
-const INTERVAL_MS = 4500;
+const INTERVAL_MS = 4000;
 
 /**
  * Full-bleed, edge-to-edge hero carousel with a true circular loop. Slides
