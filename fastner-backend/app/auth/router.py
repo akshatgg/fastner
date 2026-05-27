@@ -1,0 +1,61 @@
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
+
+from app.auth.models import User
+from app.auth.schemas import (
+    MessageResponse,
+    RefreshRequest,
+    ResendVerificationRequest,
+    SignInRequest,
+    SignUpRequest,
+    SignUpResponse,
+    TokenResponse,
+    UserResponse,
+    VerifyEmailRequest,
+)
+from app.auth.service import AuthService
+from app.core.database import get_db
+from app.utils.dependencies import get_current_user
+
+router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.post("/signup", response_model=SignUpResponse, status_code=status.HTTP_201_CREATED)
+def signup(data: SignUpRequest, db: Session = Depends(get_db)) -> SignUpResponse:
+    return AuthService(db).register(data)
+
+
+@router.post("/verify-email", response_model=MessageResponse)
+def verify_email(data: VerifyEmailRequest, db: Session = Depends(get_db)) -> MessageResponse:
+    AuthService(db).verify_email(data.token)
+    return MessageResponse(message="Your email is verified. You can now sign in.")
+
+
+@router.post("/resend-verification", response_model=MessageResponse)
+def resend_verification(
+    data: ResendVerificationRequest, db: Session = Depends(get_db)
+) -> MessageResponse:
+    AuthService(db).resend_verification(data.email)
+    return MessageResponse(
+        message="If that account exists and is unverified, a new link is on its way."
+    )
+
+
+@router.post("/login", response_model=TokenResponse)
+def login(data: SignInRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    return AuthService(db).authenticate(data)
+
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh(data: RefreshRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    return AuthService(db).refresh(data.refresh_token)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(data: RefreshRequest, db: Session = Depends(get_db)) -> None:
+    AuthService(db).revoke_refresh_token(data.refresh_token)
+
+
+@router.get("/me", response_model=UserResponse)
+def me(current_user: User = Depends(get_current_user)) -> User:
+    return current_user

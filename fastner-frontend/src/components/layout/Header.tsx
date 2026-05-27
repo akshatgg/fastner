@@ -2,12 +2,40 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Menu, X, Phone, Mail, Search, ShoppingCart, User } from "lucide-react";
+import {
+  Menu,
+  X,
+  Phone,
+  Mail,
+  Search,
+  ShoppingCart,
+  User,
+  UserCircle,
+  Settings,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
 import { NAV_LINKS, SITE } from "@/lib/site-data";
+import { useAuthStore } from "@/lib/store/auth-store";
+import { useLogout } from "@/features/auth/queries";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  // Gate auth-dependent UI behind mount so the persisted store doesn't cause a
+  // server/client hydration mismatch (server always renders the logged-out view).
+  const [mounted, setMounted] = useState(false);
+
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const user = useAuthStore((s) => s.user);
+  const logout = useLogout();
+
+  const isAuthed = mounted && Boolean(accessToken);
+  const firstName = user?.full_name?.trim().split(/\s+/)[0] ?? "Account";
+  const initials = (user?.full_name?.trim()[0] ?? "U").toUpperCase();
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -105,13 +133,84 @@ export default function Header() {
               </span>
             </a>
 
-            <a
-              href="/sign-in"
-              aria-label="Account"
-              className="inline-flex items-center justify-center rounded-md p-2.5 text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
-            >
-              <User className="h-6 w-6" />
-            </a>
+            {isAuthed ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen((v) => !v)}
+                  aria-label="Account menu"
+                  aria-expanded={profileOpen}
+                  className="inline-flex items-center gap-1.5 rounded-md p-1.5 text-ink-700 transition-colors hover:bg-ink-50 sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-2.5"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
+                    {initials}
+                  </span>
+                  <span className="hidden text-sm font-semibold text-ink-800 sm:inline">
+                    {firstName}
+                  </span>
+                  <ChevronDown
+                    className={`hidden h-4 w-4 text-ink-500 transition-transform sm:inline ${profileOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {profileOpen && (
+                  <>
+                    {/* click-catcher to close on outside click */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setProfileOpen(false)}
+                    />
+                    <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-ink-100 bg-white py-1 shadow-lg">
+                      <div className="border-b border-ink-50 px-4 py-3">
+                        <p className="truncate text-sm font-semibold text-ink-900">
+                          {user?.full_name}
+                        </p>
+                        {user?.email && (
+                          <p className="truncate text-xs text-ink-500">
+                            {user.email}
+                          </p>
+                        )}
+                      </div>
+                      <a
+                        href="/account"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
+                      >
+                        <UserCircle className="h-4 w-4" />
+                        Account
+                      </a>
+                      <a
+                        href="/settings"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
+                      >
+                        <Settings className="h-4 w-4" />
+                        Settings
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfileOpen(false);
+                          logout.mutate();
+                        }}
+                        className="flex w-full items-center gap-2.5 border-t border-ink-50 px-4 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign out
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <a
+                href="/sign-in"
+                aria-label="Account"
+                className="inline-flex items-center justify-center rounded-md p-2.5 text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
+              >
+                <User className="h-6 w-6" />
+              </a>
+            )}
 
             {/* Mobile toggle */}
             <button
@@ -145,21 +244,68 @@ export default function Header() {
                 {link.label}
               </a>
             ))}
-            <a
-              href="/sign-in"
-              onClick={() => setOpen(false)}
-              className="mt-4 flex items-center justify-center gap-2 rounded-md bg-brand-500 px-5 py-3 text-sm font-semibold text-white"
-            >
-              <User className="h-4 w-4" />
-              Sign in
-            </a>
-            <a
-              href="/sign-up"
-              onClick={() => setOpen(false)}
-              className="mt-2 flex items-center justify-center rounded-md border border-ink-200 px-5 py-3 text-sm font-semibold text-ink-800"
-            >
-              Create an account
-            </a>
+            {isAuthed ? (
+              <div className="mt-4 border-t border-ink-50 pt-4">
+                <div className="flex items-center gap-3 pb-2">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
+                    {initials}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-ink-900">
+                      {user?.full_name}
+                    </p>
+                    {user?.email && (
+                      <p className="truncate text-sm text-ink-500">{user.email}</p>
+                    )}
+                  </div>
+                </div>
+                <a
+                  href="/account"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 py-3 text-lg font-semibold text-ink-800"
+                >
+                  <UserCircle className="h-5 w-5 text-ink-500" />
+                  Account
+                </a>
+                <a
+                  href="/settings"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 py-3 text-lg font-semibold text-ink-800"
+                >
+                  <Settings className="h-5 w-5 text-ink-500" />
+                  Settings
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    logout.mutate();
+                  }}
+                  className="flex w-full items-center gap-2.5 py-3 text-left text-lg font-semibold text-red-600"
+                >
+                  <LogOut className="h-5 w-5" />
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <>
+                <a
+                  href="/sign-in"
+                  onClick={() => setOpen(false)}
+                  className="mt-4 flex items-center justify-center gap-2 rounded-md bg-brand-500 px-5 py-3 text-sm font-semibold text-white"
+                >
+                  <User className="h-4 w-4" />
+                  Sign in
+                </a>
+                <a
+                  href="/sign-up"
+                  onClick={() => setOpen(false)}
+                  className="mt-2 flex items-center justify-center rounded-md border border-ink-200 px-5 py-3 text-sm font-semibold text-ink-800"
+                >
+                  Create an account
+                </a>
+              </>
+            )}
             <div className="mt-4 space-y-2 text-sm text-ink-500">
               <a href={SITE.phoneHref} className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-brand-500" />

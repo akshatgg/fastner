@@ -1,0 +1,227 @@
+"""Auth business logic: registration, login, refresh-token rotation, and
+email verification."""
+
+import logging
+import uuid
+from datetime import datetime, timezone
+
+from fastapi import HTTPException, status
+from sqlalchemy import delete, select
+from sqlalchemy.orm import Session
+
+from app.auth import helpers
+from app.auth.models import EmailVerificationToken, RefreshToken, User
+from app.auth.schemas import (
+    SignInRequest,
+    SignUpRequest,
+    SignUpResponse,
+    TokenResponse,
+)
+from app.core.config import settings
+from app.utils.token_processor import decrypt_token, encrypt_token
+
+logger = logging.getLogger(__name__)
+
+
+class AuthService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    # --- queries -------------------------------------------------------------
+
+    def get_user_by_email(self, email: str) -> User | None:
+        return self.db.scalar(select(User).where(User.email == email))
+
+    def get_user_by_id(self, user_id: uuid.UUID) -> User | None:
+        return self.db.get(User, user_id)
+
+    # --- registration / login -----------------------------------------------
+
+    def register(self, data: SignUpRequest) -> SignUpResponse:
+        if self.get_user_by_email(data.email):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An account with this email already exists.",
+            )
+        # AUTO_VERIFY_EMAIL on → account is created already verified, no email.
+        auto_verify = settings.AUTO_VERIFY_EMAIL
+        user = User(
+            full_name=data.full_name,
+            email=data.email,
+            hashed_password=helpers.hash_password(data.password),
+            phone=data.phone,
+            is_verified=auto_verify,
+        )
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+
+        if auto_verify:
+            tokens = self._issue_token_pair(user)
+            return SignUpResponse(
+                requires_verification=False,
+                message="Your account is ready.",
+                access_token=tokens.access_token,
+                refresh_token=tokens.refresh_token,
+            )
+
+        self._send_verification(user)
+        return SignUpResponse(
+            requires_verification=True,
+            message="We've sent a verification link to your email.",
+        )
+
+    def authenticate(self, data: SignInRequest) -> TokenResponse:
+        user = self.get_user_by_email(data.email)
+        if (
+            user is None
+            or user.hashed_password is None
+            or not helpers.verify_password(data.password, user.hashed_password)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password.",
+            )
+        # Block unverified accounts unless verification is globally disabled.
+        if not settings.AUTO_VERIFY_EMAIL and not user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Please verify your email address before signing in.",
+            )
+        return self._issue_token_pair(user)
+
+    # --- email verification --------------------------------------------------
+
+    def verify_email(self, raw_token: str) -> User:
+        """Consume a verification token and mark the owning user verified."""
+        invalid = HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This verification link is invalid or has already been used.",
+        )
+        record = self.db.get(
+            EmailVerificationToken, helpers.hash_verification_token(raw_token)
+        )
+        if record is None:
+            raise invalid
+
+        if record.expires_at <= datetime.now(timezone.utc):
+            self.db.delete(record)
+            self.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This verification link has expired. Please request a new one.",
+            )
+
+        user = self.db.get(User, record.user_id)
+        if user is None:
+            self.db.delete(record)
+            self.db.commit()
+            raise invalid
+
+        user.is_verified = True
+        self.db.delete(record)  # single-use
+        self.db.commit()
+        return user
+
+    def resend_verification(self, email: str) -> None:
+        """Issue a fresh verification email if the account exists and is
+        unverified. Always silent to avoid leaking which emails are registered."""
+        user = self.get_user_by_email(email)
+        if user is None or user.is_verified:
+            return
+        # Drop any outstanding tokens so only the newest link works.
+        self.db.execute(
+            delete(EmailVerificationToken).where(
+                EmailVerificationToken.user_id == user.id
+            )
+        )
+        self.db.commit()
+        self._send_verification(user)
+
+    # --- refresh-token flow --------------------------------------------------
+
+    def refresh(self, raw_refresh_token: str) -> TokenResponse:
+        """Validate a refresh token, rotate it, and issue a new token pair.
+
+        Rotation: the presented refresh token is deleted and a brand-new one is
+        issued, so a refresh token can only be used once (mitigates replay).
+        """
+        token_hash = helpers.hash_refresh_token(raw_refresh_token)
+        record = self.db.get(RefreshToken, token_hash)
+
+        if record is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token.",
+            )
+
+        # Expired? Drop it and reject.
+        if record.expires_at <= datetime.now(timezone.utc):
+            self.db.delete(record)
+            self.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token has expired.",
+            )
+
+        # Defense in depth: decrypt the stored token and confirm it matches the
+        # presented one (guards against a hash collision / tampered lookup key).
+        if decrypt_token(record.token) != raw_refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token.",
+            )
+
+        user = self.db.get(User, record.user_id)
+        if user is None:
+            self.db.delete(record)
+            self.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token.",
+            )
+
+        # Rotate: invalidate the old token, then issue a fresh pair.
+        self.db.delete(record)
+        return self._issue_token_pair(user)
+
+    def revoke_refresh_token(self, raw_refresh_token: str) -> None:
+        """Logout: delete the refresh token if it exists (idempotent)."""
+        record = self.db.get(RefreshToken, helpers.hash_refresh_token(raw_refresh_token))
+        if record is not None:
+            self.db.delete(record)
+            self.db.commit()
+
+    # --- internals -----------------------------------------------------------
+
+    def _send_verification(self, user: User) -> None:
+        """Persist a fresh verification token and email the link. A send failure
+        is logged but not raised — the user can resend rather than lose signup."""
+        raw_token = helpers.generate_verification_token()
+        self.db.add(
+            EmailVerificationToken(
+                token_hash=helpers.hash_verification_token(raw_token),
+                user_id=user.id,
+                expires_at=helpers.verification_token_expiry(),
+            )
+        )
+        self.db.commit()
+        try:
+            helpers.send_verification_email(user.email, user.full_name, raw_token)
+        except Exception:  # noqa: BLE001 — never fail signup on email trouble
+            logger.exception("Failed to send verification email to %s", user.email)
+
+    def _issue_token_pair(self, user: User) -> TokenResponse:
+        access_token = helpers.create_access_token(user.id, user.role)
+
+        raw_refresh = helpers.generate_refresh_token()
+        self.db.add(
+            RefreshToken(
+                token_hash=helpers.hash_refresh_token(raw_refresh),
+                token=encrypt_token(raw_refresh),
+                user_id=user.id,
+                expires_at=helpers.refresh_token_expiry(),
+            )
+        )
+        self.db.commit()
+        return TokenResponse(access_token=access_token, refresh_token=raw_refresh)

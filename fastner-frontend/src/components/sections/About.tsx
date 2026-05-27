@@ -1,12 +1,6 @@
 import { Check, ArrowRight } from "lucide-react";
 import { HexNut } from "@/components/ui/FastenerArt";
-
-const POINTS = [
-  "Bulk & OEM orders, made easy",
-  "Fast, reliable nationwide dispatch",
-  "Genuine, grade-marked fasteners",
-  "A team that actually knows fasteners",
-];
+import { ABOUT_POINTS } from "@/lib/site-data";
 
 export default function About() {
   return (
@@ -43,7 +37,7 @@ export default function About() {
         </div>
 
         <ul className="space-y-4 lg:pl-10">
-          {POINTS.map((point) => (
+          {ABOUT_POINTS.map((point) => (
             <li
               key={point}
               className="flex items-start gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5"

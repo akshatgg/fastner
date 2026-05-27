@@ -1,49 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  MessagesSquare,
-  PackageSearch,
-  Warehouse,
-  Truck,
-  ThumbsUp,
-  Handshake,
-  type LucideIcon,
-} from "lucide-react";
 import SectionHeading from "@/components/ui/SectionHeading";
-
-const PROCESS: { icon: LucideIcon; title: string; body: string }[] = [
-  {
-    icon: MessagesSquare,
-    title: "Consultancy",
-    body: "Our team of experts will work with you to understand your specific needs and requirements for fasteners. We will help you identify the right products that will meet your needs and ensure the best fit for your project.",
-  },
-  {
-    icon: PackageSearch,
-    title: "Procuring",
-    body: "We take quality seriously and supply all of our products to meet the highest standards. If we don't have the product readily available, we will source it from trusted suppliers around the globe who adhere to the same quality norms as we do.",
-  },
-  {
-    icon: Warehouse,
-    title: "Warehousing",
-    body: "Our organized and secure warehouse ensures that our products are stored in optimal conditions, ready for fast and efficient delivery to our customers.",
-  },
-  {
-    icon: Truck,
-    title: "Supply",
-    body: "We understand that timely delivery is critical to your project's success, which is why we pack and ship all products according to your specific requirements. Our logistics team works tirelessly to ensure that your order is delivered on time and in perfect condition.",
-  },
-  {
-    icon: ThumbsUp,
-    title: "Feedback",
-    body: "We value our customers and their feedback. We welcome any feedback, whether positive or negative, and use it to continuously improve our processes and service.",
-  },
-  {
-    icon: Handshake,
-    title: "Relationship & Trust",
-    body: "Our commitment to building long-term relationships with our customers is the cornerstone of our business. We believe that trust and reliability are key to any successful business partnership and we strive to improve our processes to ensure your satisfaction every step of the way.",
-  },
-];
+import { PROCESS_STEPS } from "@/lib/site-data";
 
 export default function ProcessTimeline() {
   const [visible, setVisible] = useState<Set<number>>(new Set());
@@ -52,7 +11,7 @@ export default function ProcessTimeline() {
   useEffect(() => {
     // Respect reduced-motion: reveal everything immediately, skip the animation.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setVisible(new Set(PROCESS.map((_, i) => i)));
+      setVisible(new Set(PROCESS_STEPS.map((_, i) => i)));
       return;
     }
 
@@ -92,7 +51,7 @@ export default function ProcessTimeline() {
             className="absolute left-6 top-2 h-[calc(100%-1rem)] w-0.5 bg-ink-200 sm:left-1/2 sm:-translate-x-1/2"
           />
 
-          {PROCESS.map((p, i) => {
+          {PROCESS_STEPS.map((p, i) => {
             const Icon = p.icon;
             const onRight = i % 2 === 0; // alternate sides on desktop
             const isVisible = visible.has(i);

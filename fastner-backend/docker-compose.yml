@@ -1,0 +1,21 @@
+services:
+  # PostgreSQL Database (lightweight Alpine image)
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: fastner-postgres-db
+    ports:
+      - "54323:5432"  # Host port avoids conflicts with local postgres / vm-api
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fastner_db
+    volumes:
+      - postgres_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fastner_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_db_data:

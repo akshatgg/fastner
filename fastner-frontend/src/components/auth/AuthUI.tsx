@@ -2,22 +2,9 @@
 
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
-import {
-  Eye,
-  EyeOff,
-  ShieldCheck,
-  Truck,
-  BadgeCheck,
-  type LucideIcon,
-} from "lucide-react";
-import { SITE } from "@/lib/site-data";
+import { Eye, EyeOff } from "lucide-react";
+import { SITE, AUTH_HIGHLIGHTS } from "@/lib/site-data";
 import { HexNut, BoltSide } from "@/components/ui/FastenerArt";
-
-const HIGHLIGHTS: { Icon: LucideIcon; label: string }[] = [
-  { Icon: ShieldCheck, label: "Genuine-quality fasteners" },
-  { Icon: BadgeCheck, label: "Trusted brands in stock" },
-  { Icon: Truck, label: "Fast nationwide shipping" },
-];
 
 /** Split-screen auth chrome: industrial brand panel + a centred form column. */
 export function AuthShell({ children }: { children: ReactNode }) {
@@ -64,7 +51,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
             <span className="text-brand-500">every single time.</span>
           </h2>
           <ul className="mt-10 space-y-4">
-            {HIGHLIGHTS.map(({ Icon, label }) => (
+            {AUTH_HIGHLIGHTS.map(({ Icon, label }) => (
               <li
                 key={label}
                 className="flex items-center gap-3 text-lg text-ink-200 sm:text-xl"
@@ -123,6 +110,10 @@ export function AuthField({
   autoComplete,
   required = true,
   labelRight,
+  value,
+  onChange,
+  error,
+  disabled,
 }: {
   id: string;
   label: string;
@@ -131,6 +122,10 @@ export function AuthField({
   autoComplete?: string;
   required?: boolean;
   labelRight?: ReactNode;
+  value?: string;
+  onChange?: (value: string) => void;
+  error?: string;
+  disabled?: boolean;
 }) {
   const [show, setShow] = useState(false);
   const isPassword = type === "password";
@@ -152,7 +147,16 @@ export function AuthField({
           placeholder={placeholder}
           autoComplete={autoComplete}
           required={required}
-          className="w-full rounded-md border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-sm outline-none transition-colors placeholder:text-ink-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30"
+          disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          {...(onChange
+            ? { value: value ?? "", onChange: (e) => onChange(e.target.value) }
+            : {})}
+          className={`w-full rounded-md border bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-sm outline-none transition-colors placeholder:text-ink-400 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${
+            error
+              ? "border-red-400 focus:border-red-500 focus:ring-red-500/30"
+              : "border-ink-200 focus:border-brand-500 focus:ring-brand-500/30"
+          }`}
         />
         {isPassword && (
           <button
@@ -165,17 +169,40 @@ export function AuthField({
           </button>
         )}
       </div>
+      {error && <p className="mt-1.5 text-xs font-medium text-red-600">{error}</p>}
     </div>
   );
 }
 
-export function SubmitButton({ children }: { children: ReactNode }) {
+/** Inline form-level error banner (e.g. failed login / signup). */
+export function FormError({ message }: { message?: string | null }) {
+  if (!message) return null;
+  return (
+    <p
+      role="alert"
+      className="rounded-md border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-700"
+    >
+      {message}
+    </p>
+  );
+}
+
+export function SubmitButton({
+  children,
+  loading = false,
+  disabled = false,
+}: {
+  children: ReactNode;
+  loading?: boolean;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="submit"
-      className="w-full rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+      disabled={disabled || loading}
+      className="w-full rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-70"
     >
-      {children}
+      {loading ? "Please wait…" : children}
     </button>
   );
 }
@@ -204,14 +231,28 @@ export function Divider({ label }: { label: string }) {
   );
 }
 
-/** Small labelled checkbox used for "remember me" / terms. */
-export function Checkbox({ id, children }: { id: string; children: ReactNode }) {
+/** Small labelled checkbox used for "remember me" / terms.
+ *  Controlled when `checked`/`onChange` are passed, uncontrolled otherwise. */
+export function Checkbox({
+  id,
+  children,
+  checked,
+  onChange,
+}: {
+  id: string;
+  children: ReactNode;
+  checked?: boolean;
+  onChange?: (checked: boolean) => void;
+}) {
   return (
     <label htmlFor={id} className="flex cursor-pointer items-start gap-2 text-sm text-ink-600">
       <input
         id={id}
         name={id}
         type="checkbox"
+        {...(onChange
+          ? { checked: checked ?? false, onChange: (e) => onChange(e.target.checked) }
+          : {})}
         className="mt-0.5 h-4 w-4 shrink-0 rounded border-ink-300 text-brand-500 accent-brand-500 focus:ring-brand-500/40"
       />
       <span>{children}</span>

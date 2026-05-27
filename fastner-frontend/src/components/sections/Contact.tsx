@@ -1,14 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Phone, Mail, MapPin, Send, CheckCircle2 } from "lucide-react";
-import { SITE } from "@/lib/site-data";
-
-const CONTACT_ITEMS = [
-  { icon: Phone, label: "Call us", value: SITE.phone, href: SITE.phoneHref },
-  { icon: Mail, label: "Email us", value: SITE.email, href: SITE.emailHref },
-  { icon: MapPin, label: "Visit us", value: SITE.address, href: undefined },
-];
+import { Send, CheckCircle2 } from "lucide-react";
+import { SITE, CONTACT_ITEMS } from "@/lib/site-data";
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
