@@ -13,7 +13,7 @@ function IndustryCard({ ind }: { ind: Industry }) {
   return (
     <a
       href="#contact"
-      className="group/card relative block aspect-[4/3] w-72 shrink-0 overflow-hidden rounded-2xl shadow-card ring-1 ring-ink-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-lift sm:w-80 lg:w-96"
+      className="group/card relative block aspect-[4/3] w-56 shrink-0 overflow-hidden rounded-2xl shadow-card ring-1 ring-ink-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-lift sm:w-80 lg:w-96"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

@@ -16,7 +16,7 @@ type Slide = { src: string; alt: string; bg: string; cta: Cta; caption?: Caption
 
 /** Shared button styling; each slide adds its own translucent colour via `cta.className`. */
 const BTN_BASE =
-  "absolute bottom-10 left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-md px-6 py-2.5 text-xs font-semibold uppercase tracking-wide text-white shadow-lg ring-1 backdrop-blur-md transition-all sm:bottom-14 sm:px-7 sm:py-3 sm:text-sm";
+  "absolute bottom-5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-lg ring-1 backdrop-blur-md transition-all sm:bottom-14 sm:gap-2 sm:px-7 sm:py-3 sm:text-sm";
 
 const SLIDES: Slide[] = [
   {
@@ -188,7 +188,7 @@ export default function HeroCarousel() {
               </div>
             )}
             <a href={slide.cta.href} className={`${BTN_BASE} ${slide.cta.className}`}>
-              <slide.cta.Icon className="h-4 w-4" />
+              <slide.cta.Icon className="h-3 w-3 sm:h-4 sm:w-4" />
               {slide.cta.label}
             </a>
           </div>
