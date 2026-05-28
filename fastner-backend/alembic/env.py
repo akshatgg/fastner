@@ -10,6 +10,7 @@ from app.core.database import Base
 # Import every feature's models so their tables register on Base.metadata for
 # autogenerate. Add a line here when a new feature introduces models.
 import app.auth.models  # noqa: E402,F401
+import app.catalog.models  # noqa: E402,F401
 
 load_dotenv()
 
