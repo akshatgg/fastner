@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderTree, SlidersHorizontal, ArrowLeft } from "lucide-react";
+import { FolderTree, SlidersHorizontal, Factory, Users, ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { useRequireAdmin } from "@/features/catalog/queries";
@@ -11,6 +11,8 @@ import { useCurrentUser } from "@/features/auth/queries";
 const NAV = [
   { href: "/admin/categories", label: "Categories & Products", Icon: FolderTree },
   { href: "/admin/filters", label: "Filters", Icon: SlidersHorizontal },
+  { href: "/admin/industries", label: "Industries", Icon: Factory },
+  { href: "/admin/users", label: "Users", Icon: Users },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

@@ -11,6 +11,8 @@ from app.core.database import Base
 # autogenerate. Add a line here when a new feature introduces models.
 import app.auth.models  # noqa: E402,F401
 import app.catalog.models  # noqa: E402,F401
+import app.cart.models  # noqa: E402,F401
+import app.industries.models  # noqa: E402,F401
 
 load_dotenv()
 

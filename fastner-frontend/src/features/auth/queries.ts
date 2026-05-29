@@ -9,11 +9,13 @@ import { ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/auth-store";
 
 import {
+  listUsers,
   loginRequest,
   logoutRequest,
   meRequest,
   resendVerificationRequest,
   signupRequest,
+  updateUserRole,
   verifyEmailRequest,
 } from "./api";
 import type { SignInInput, SignUpInput, TokenResponse } from "./types";
@@ -26,6 +28,7 @@ function errorMessage(error: unknown, fallback: string): string {
 
 export const authKeys = {
   me: ["auth", "me"] as const,
+  users: ["auth", "users"] as const,
 };
 
 /** Persist the token pair, then fetch + cache the user profile. */
@@ -157,5 +160,36 @@ export function useCurrentUser() {
     queryKey: authKeys.me,
     queryFn: meRequest,
     enabled: Boolean(accessToken),
+  });
+}
+
+// --- admin: user management ---
+
+/** All users, for the admin user-management table. */
+export function useUsers() {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  return useQuery({
+    queryKey: authKeys.users,
+    queryFn: listUsers,
+    enabled: Boolean(accessToken),
+  });
+}
+
+/** Promote/demote a user between "customer" and "admin". */
+export function useUpdateUserRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, role }: { id: string; role: "customer" | "admin" }) =>
+      updateUserRole(id, role),
+    onSuccess: (user) => {
+      queryClient.invalidateQueries({ queryKey: authKeys.users });
+      toast.success(
+        user.role === "admin"
+          ? `${user.full_name} is now an admin.`
+          : `${user.full_name} is now a customer.`,
+      );
+    },
+    onError: (error) =>
+      toast.error(errorMessage(error, "Could not update the user's role.")),
   });
 }

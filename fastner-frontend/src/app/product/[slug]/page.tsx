@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { use, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Minus, Plus, ShoppingCart } from "lucide-react";
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { usePublicProduct } from "@/features/catalog/queries";
+import { useAddToCart } from "@/features/cart/queries";
 
 export default function ProductPage({
   params,
@@ -16,6 +17,8 @@ export default function ProductPage({
   const { slug } = use(params);
   const { data: product, isLoading, isError } = usePublicProduct(slug);
   const [active, setActive] = useState(0);
+  const [qty, setQty] = useState(1);
+  const addToCart = useAddToCart();
 
   const primary = product?.categories.find((c) => c.is_primary) ?? product?.categories[0];
   const specs = product ? Object.entries(product.specifications) : [];
@@ -128,11 +131,47 @@ export default function ProductPage({
                     </div>
                   )}
 
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                    <div className="flex items-center rounded-lg border border-ink-200">
+                      <button
+                        type="button"
+                        onClick={() => setQty((q) => Math.max(1, q - 1))}
+                        className="p-2.5 text-ink-500 transition hover:text-brand-600 disabled:opacity-40"
+                        disabled={qty <= 1}
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="w-12 text-center text-sm font-semibold text-ink-900">
+                        {qty}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setQty((q) => q + 1)}
+                        className="p-2.5 text-ink-500 transition hover:text-brand-600"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        addToCart.mutate({ product_id: product.id, quantity: qty })
+                      }
+                      disabled={addToCart.isPending}
+                      className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-50"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      {addToCart.isPending ? "Adding…" : "Add to cart"}
+                    </button>
+                  </div>
+
                   <Link
                     href="/#contact"
-                    className="mt-6 inline-block rounded-lg bg-brand-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-600"
+                    className="mt-3 inline-block text-sm font-semibold text-ink-500 transition hover:text-brand-600"
                   >
-                    Enquire about this product
+                    Or enquire about this product →
                   </Link>
                 </div>
               </div>

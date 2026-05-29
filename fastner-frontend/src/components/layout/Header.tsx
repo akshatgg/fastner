@@ -12,12 +12,14 @@ import {
   User,
   UserCircle,
   Settings,
+  LayoutDashboard,
   LogOut,
   ChevronDown,
 } from "lucide-react";
 import { NAV_LINKS, SITE } from "@/lib/site-data";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useLogout } from "@/features/auth/queries";
+import { useCartCount } from "@/features/cart/queries";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -30,8 +32,11 @@ export default function Header() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
   const logout = useLogout();
+  const cartCount = useCartCount();
 
   const isAuthed = mounted && Boolean(accessToken);
+  const isAdmin =
+    isAuthed && (user?.role === "admin" || user?.role === "superadmin");
   const firstName = user?.full_name?.trim().split(/\s+/)[0] ?? "Account";
   const initials = (user?.full_name?.trim()[0] ?? "U").toUpperCase();
 
@@ -128,9 +133,11 @@ export default function Header() {
               className="relative inline-flex items-center justify-center rounded-md p-2.5 text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
             >
               <ShoppingCart className="h-6 w-6" />
-              <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 text-[10px] font-bold leading-none text-white">
-                0
-              </span>
+              {mounted && cartCount > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold leading-none text-white">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
             </a>
 
             {isAuthed ? (
@@ -171,6 +178,16 @@ export default function Header() {
                           </p>
                         )}
                       </div>
+                      {isAdmin && (
+                        <a
+                          href="/admin"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 border-b border-ink-50 px-4 py-2.5 text-sm font-semibold text-brand-600 transition-colors hover:bg-brand-50"
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          Dashboard
+                        </a>
+                      )}
                       <a
                         href="/account"
                         onClick={() => setProfileOpen(false)}
@@ -259,6 +276,16 @@ export default function Header() {
                     )}
                   </div>
                 </div>
+                {isAdmin && (
+                  <a
+                    href="/admin"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2.5 py-3 text-lg font-semibold text-brand-600"
+                  >
+                    <LayoutDashboard className="h-5 w-5" />
+                    Dashboard
+                  </a>
+                )}
                 <a
                   href="/account"
                   onClick={() => setOpen(false)}

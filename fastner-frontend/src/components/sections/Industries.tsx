@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { INDUSTRIES, type Industry } from "@/lib/site-data";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { INDUSTRIES } from "@/lib/site-data";
+import { usePublicIndustries } from "@/features/industries/queries";
 import SectionHeading from "@/components/ui/SectionHeading";
 
 /** Advance one card every this many ms. */
@@ -9,19 +10,29 @@ const STEP_MS = 3000;
 /** Must match the `gap-6` (1.5rem) on the track below. */
 const GAP_PX = 24;
 
-function IndustryCard({ ind }: { ind: Industry }) {
+type Tile = { key: string; name: string; image: string | null; blurb: string | null };
+
+function IndustryCard({ tile }: { tile: Tile }) {
   return (
     <a
       href="#contact"
       className="group/card relative block aspect-[4/3] w-56 shrink-0 overflow-hidden rounded-2xl shadow-card ring-1 ring-ink-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-lift sm:w-80 lg:w-96"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={ind.image}
-        alt={ind.name}
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover/card:scale-110"
-        draggable={false}
-      />
+      {tile.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={tile.image}
+          alt={tile.name}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover/card:scale-110"
+          draggable={false}
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-ink-900">
+          <span className="font-display text-6xl font-bold text-ink-700">
+            {tile.name.trim().charAt(0).toUpperCase()}
+          </span>
+        </div>
+      )}
       {/* Readability gradient — darkens the lower half behind the text. */}
       <div
         aria-hidden
@@ -30,17 +41,39 @@ function IndustryCard({ ind }: { ind: Industry }) {
       <div className="absolute inset-x-0 bottom-0 p-6">
         <span className="block h-1 w-10 bg-brand-500 transition-all duration-300 group-hover/card:w-16" />
         <h3 className="mt-3 font-display text-xl font-bold uppercase tracking-wide text-white sm:text-2xl">
-          {ind.name}
+          {tile.name}
         </h3>
-        <p className="mt-1.5 text-sm leading-snug text-ink-200 sm:text-base">
-          {ind.blurb}
-        </p>
+        {tile.blurb && (
+          <p className="mt-1.5 text-sm leading-snug text-ink-200 sm:text-base">
+            {tile.blurb}
+          </p>
+        )}
       </div>
     </a>
   );
 }
 
 export default function Industries() {
+  const { data } = usePublicIndustries();
+
+  // Live, admin-managed industries; until any exist, fall back to the static
+  // showcase list so the marketing page is never empty (same as Categories).
+  const tiles = useMemo<Tile[]>(() => {
+    const live = (data ?? []).map((i) => ({
+      key: i.id,
+      name: i.name,
+      image: i.image_url,
+      blurb: i.blurb,
+    }));
+    if (live.length > 0) return live;
+    return INDUSTRIES.map((i) => ({
+      key: i.name,
+      name: i.name,
+      image: i.image,
+      blurb: i.blurb,
+    }));
+  }, [data]);
+
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [animate, setAnimate] = useState(true);
@@ -48,6 +81,7 @@ export default function Industries() {
   const trackRef = useRef<HTMLDivElement>(null);
 
   // Measure one card's width (+ gap) so we can shift by exactly one card.
+  // Re-measures when the tile set changes (e.g. after live data loads).
   useEffect(() => {
     const measure = () => {
       const first = trackRef.current?.firstElementChild as HTMLElement | null;
@@ -56,7 +90,7 @@ export default function Industries() {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, []);
+  }, [tiles.length]);
 
   // Auto-advance on a timer; paused on hover.
   useEffect(() => {
@@ -74,14 +108,14 @@ export default function Industries() {
   }, [animate]);
 
   const onTransitionEnd = () => {
-    if (index >= INDUSTRIES.length) {
+    if (index >= tiles.length) {
       setAnimate(false);
       setIndex(0);
     }
   };
 
   // Duplicated so there are always cards entering from the right.
-  const cards = [...INDUSTRIES, ...INDUSTRIES];
+  const cards = [...tiles, ...tiles];
 
   return (
     <section id="industries" className="bg-white py-20 sm:py-24">
@@ -118,8 +152,8 @@ export default function Industries() {
           }}
           onTransitionEnd={onTransitionEnd}
         >
-          {cards.map((ind, i) => (
-            <IndustryCard key={`${ind.name}-${i}`} ind={ind} />
+          {cards.map((tile, i) => (
+            <IndustryCard key={`${tile.key}-${i}`} tile={tile} />
           ))}
         </div>
       </div>

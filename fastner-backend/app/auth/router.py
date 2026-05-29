@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
@@ -11,13 +13,20 @@ from app.auth.schemas import (
     SignUpResponse,
     TokenResponse,
     UserResponse,
+    UserRoleUpdate,
     VerifyEmailRequest,
 )
 from app.auth.service import AuthService
 from app.core.database import get_db
-from app.utils.dependencies import get_current_user
+from app.utils.dependencies import get_current_user, require_role
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+admin_router = APIRouter(
+    prefix="/admin/users",
+    tags=["users-admin"],
+    dependencies=[Depends(require_role("admin", "superadmin"))],
+)
 
 
 @router.post("/signup", response_model=SignUpResponse, status_code=status.HTTP_201_CREATED)
@@ -59,3 +68,21 @@ def logout(data: RefreshRequest, db: Session = Depends(get_db)) -> None:
 @router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+# ============================ ADMIN: users ============================
+
+
+@admin_router.get("", response_model=list[UserResponse])
+def list_users(db: Session = Depends(get_db)) -> list[User]:
+    return AuthService(db).list_users()
+
+
+@admin_router.patch("/{user_id}/role", response_model=UserResponse)
+def update_user_role(
+    user_id: uuid.UUID,
+    data: UserRoleUpdate,
+    actor: User = Depends(require_role("admin", "superadmin")),
+    db: Session = Depends(get_db),
+) -> User:
+    return AuthService(db).set_user_role(actor, user_id, data.role)

@@ -35,6 +35,42 @@ class AuthService:
     def get_user_by_id(self, user_id: uuid.UUID) -> User | None:
         return self.db.get(User, user_id)
 
+    # --- admin: user management ----------------------------------------------
+
+    def list_users(self) -> list[User]:
+        """All users, newest first — for the admin user-management table."""
+        return list(
+            self.db.scalars(select(User).order_by(User.created_at.desc())).all()
+        )
+
+    def set_user_role(
+        self, actor: User, user_id: uuid.UUID, new_role: str
+    ) -> User:
+        """Change a user's role.
+
+        Guards: an admin can't change their own role (avoids self-lockout), and
+        only a superadmin may modify another superadmin.
+        """
+        if actor.id == user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You can't change your own role.",
+            )
+        user = self.db.get(User, user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+            )
+        if user.role == "superadmin" and actor.role != "superadmin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only a superadmin can change a superadmin's role.",
+            )
+        user.role = new_role
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
     # --- registration / login -----------------------------------------------
 
     def register(self, data: SignUpRequest) -> SignUpResponse:

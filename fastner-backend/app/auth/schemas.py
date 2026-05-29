@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -63,3 +64,12 @@ class UserResponse(BaseModel):
     phone: str | None
     is_verified: bool
     created_at: datetime
+
+
+# --- admin: user management --------------------------------------------------
+
+
+class UserRoleUpdate(BaseModel):
+    # Admins may toggle between these two roles; "superadmin" is intentionally
+    # not assignable through the API.
+    role: Literal["customer", "admin"]

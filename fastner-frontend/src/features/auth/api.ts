@@ -47,3 +47,13 @@ export const logoutRequest = (refreshToken: string) =>
     body: { refresh_token: refreshToken },
     auth: false,
   });
+
+// --- admin: user management ---
+
+export const listUsers = () => apiFetch<User[]>("/admin/users");
+
+export const updateUserRole = (id: string, role: "customer" | "admin") =>
+  apiFetch<User>(`/admin/users/${id}/role`, {
+    method: "PATCH",
+    body: { role },
+  });

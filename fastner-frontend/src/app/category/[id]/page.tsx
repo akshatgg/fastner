@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { use, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ShoppingCart } from "lucide-react";
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -11,8 +11,9 @@ import {
   useCategoryProducts,
   usePublicCategoryTree,
 } from "@/features/catalog/queries";
+import { useAddToCart } from "@/features/cart/queries";
 import { findWithTrail } from "@/features/catalog/tree";
-import type { CategoryTreeNode } from "@/features/catalog/types";
+import type { CategoryTreeNode, Product } from "@/features/catalog/types";
 
 export default function CategoryPage({
   params,
@@ -167,47 +168,83 @@ function LeafProducts({ category }: { category: CategoryTreeNode }) {
       )}
 
       {/* Product grid */}
-      <div className="flex-1">
-        {isLoading ? (
-          <p className="py-20 text-center text-sm text-ink-400">Loading…</p>
-        ) : !data || data.items.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-ink-200 py-20 text-center text-sm text-ink-400">
-            No products {selected.length > 0 ? "match these filters" : "in this category yet"}.
-          </p>
-        ) : (
-          <>
-            <p className="mb-4 text-sm text-ink-500">{data.total} products</p>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {data.items.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/product/${p.slug}`}
-                  className="group flex flex-col rounded-xl border border-ink-100 bg-white p-3 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand-200 hover:shadow-lift"
-                >
-                  <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-ink-50">
-                    {p.images[0] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={p.images[0]}
-                        alt={p.name}
-                        className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span className="font-display text-3xl font-bold text-ink-200">
-                        {p.name.trim().charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="mt-2 text-sm font-semibold text-ink-900 line-clamp-2">
-                    {p.name}
-                  </h3>
-                </Link>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+      <ProductGrid
+        isLoading={isLoading}
+        items={data?.items ?? []}
+        total={data?.total ?? 0}
+        hasFilters={selected.length > 0}
+      />
+    </div>
+  );
+}
+
+function ProductGrid({
+  isLoading,
+  items,
+  total,
+  hasFilters,
+}: {
+  isLoading: boolean;
+  items: Product[];
+  total: number;
+  hasFilters: boolean;
+}) {
+  return (
+    <div className="flex-1">
+      {isLoading ? (
+        <p className="py-20 text-center text-sm text-ink-400">Loading…</p>
+      ) : items.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-ink-200 py-20 text-center text-sm text-ink-400">
+          No products {hasFilters ? "match these filters" : "in this category yet"}.
+        </p>
+      ) : (
+        <>
+          <p className="mb-4 text-sm text-ink-500">{total} products</p>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {items.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ProductCard({ product }: { product: Product }) {
+  const addToCart = useAddToCart();
+
+  return (
+    <div className="group flex flex-col rounded-xl border border-ink-100 bg-white p-3 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand-200 hover:shadow-lift">
+      <Link href={`/product/${product.slug}`} className="flex flex-col">
+        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-ink-50">
+          {product.images[0] ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.images[0]}
+              alt={product.name}
+              className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+              loading="lazy"
+            />
+          ) : (
+            <span className="font-display text-3xl font-bold text-ink-200">
+              {product.name.trim().charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
+        <h3 className="mt-2 text-sm font-semibold text-ink-900 line-clamp-2">
+          {product.name}
+        </h3>
+      </Link>
+      <button
+        type="button"
+        onClick={() => addToCart.mutate({ product_id: product.id, quantity: 1 })}
+        disabled={addToCart.isPending}
+        className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-ink-200 px-3 py-2 text-xs font-bold text-ink-700 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 disabled:opacity-50"
+      >
+        <ShoppingCart className="h-3.5 w-3.5" />
+        Add to cart
+      </button>
     </div>
   );
 }
