@@ -8,6 +8,7 @@ Two routers:
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.catalog import schemas
@@ -21,6 +22,12 @@ admin_router = APIRouter(
     dependencies=[Depends(require_role("admin", "superadmin"))],
 )
 public_router = APIRouter(prefix="/catalog", tags=["catalog"])
+
+
+class ProductReorderRequest(BaseModel):
+    """An ordered list of product ids; each id's index becomes its ``position``."""
+
+    product_ids: list[uuid.UUID]
 
 
 def _category_response(svc: CatalogService, cat) -> schemas.CategoryResponse:
@@ -124,6 +131,13 @@ def create_product(data: schemas.ProductCreate, db: Session = Depends(get_db)):
     return svc.to_product_response(svc.create_product(data))
 
 
+# Declared before /products/{product_id} so "reorder" isn't parsed as an id.
+@admin_router.put("/products/reorder", status_code=status.HTTP_204_NO_CONTENT)
+def reorder_products(data: ProductReorderRequest, db: Session = Depends(get_db)):
+    """Persist a new product display order (drag-and-drop in the admin tree)."""
+    CatalogService(db).reorder_products(data.product_ids)
+
+
 @admin_router.get("/products/{product_id}", response_model=schemas.ProductResponse)
 def get_product(product_id: uuid.UUID, db: Session = Depends(get_db)):
     svc = CatalogService(db)
@@ -143,6 +157,22 @@ def delete_product(product_id: uuid.UUID, db: Session = Depends(get_db)):
     CatalogService(db).delete_product(product_id)
 
 
+@admin_router.get(
+    "/categories/{category_id}/products",
+    response_model=schemas.ProductListResponse,
+)
+def admin_category_products(
+    category_id: uuid.UUID,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=200, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    """All products under a category (including inactive) for the admin tree."""
+    return CatalogService(db).list_products_in_category(
+        category_id, [], page, page_size, active_only=False
+    )
+
+
 # ============================ PUBLIC: storefront ============================
 
 
@@ -150,6 +180,12 @@ def delete_product(product_id: uuid.UUID, db: Session = Depends(get_db)):
 def category_tree(db: Session = Depends(get_db)):
     """The full active category tree for storefront navigation."""
     return CatalogService(db).build_tree(active_only=True)
+
+
+@public_router.get("/products", response_model=list[schemas.ProductSitemapItem])
+def list_public_products(db: Session = Depends(get_db)):
+    """All active product slugs + timestamps, for the storefront sitemap."""
+    return CatalogService(db).list_active_products()
 
 
 @public_router.get("/categories/{category_id}", response_model=schemas.CategoryResponse)

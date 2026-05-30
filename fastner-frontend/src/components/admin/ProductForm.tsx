@@ -9,6 +9,7 @@ import {
   useUpdateProduct,
 } from "@/features/catalog/queries";
 import type { Product } from "@/features/catalog/types";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 const inputCls =
   "w-full rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100";
@@ -217,15 +218,17 @@ export default function ProductForm({
         <label className={labelCls}>Image URLs (Cloudinary)</label>
         <div className="space-y-2">
           {images.map((url, i) => (
-            <div key={i} className="flex gap-2">
-              <input
-                className={inputCls}
-                placeholder="https://res.cloudinary.com/..."
-                value={url}
-                onChange={(e) => setImages((s) => s.map((u, j) => (j === i ? e.target.value : u)))}
-              />
+            <div key={i} className="flex items-start gap-2">
+              <div className="flex-1">
+                <ImageUpload
+                  value={url}
+                  onChange={(v) => setImages((s) => s.map((u, j) => (j === i ? v : u)))}
+                  label=""
+                  folder="ibc/products"
+                />
+              </div>
               <button type="button" onClick={() => setImages((s) => s.filter((_, j) => j !== i))}
-                className="shrink-0 rounded-lg px-2 text-ink-400 hover:bg-ink-50 hover:text-red-600">
+                className="shrink-0 rounded-lg px-2 py-2 text-ink-400 hover:bg-ink-50 hover:text-red-600">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>

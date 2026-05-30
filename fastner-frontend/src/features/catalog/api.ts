@@ -77,6 +77,11 @@ export const deleteFilterValue = (id: string) =>
 
 // --- products (admin) ---
 
+export const getAdminCategoryProducts = (categoryId: string) =>
+  apiFetch<ProductListResponse>(
+    `/admin/catalog/categories/${categoryId}/products?page_size=200`,
+  );
+
 export const getProduct = (id: string) =>
   apiFetch<Product>(`/admin/catalog/products/${id}`);
 
@@ -88,3 +93,9 @@ export const updateProduct = (id: string, input: ProductUpdateInput) =>
 
 export const deleteProduct = (id: string) =>
   apiFetch<void>(`/admin/catalog/products/${id}`, { method: "DELETE" });
+
+export const reorderProducts = (productIds: string[]) =>
+  apiFetch<void>("/admin/catalog/products/reorder", {
+    method: "PUT",
+    body: { product_ids: productIds },
+  });

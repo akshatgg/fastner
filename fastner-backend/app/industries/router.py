@@ -8,6 +8,7 @@ Two routers:
 import uuid
 
 from fastapi import APIRouter, Depends, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -21,6 +22,12 @@ admin_router = APIRouter(
     dependencies=[Depends(require_role("admin", "superadmin"))],
 )
 public_router = APIRouter(prefix="/industries", tags=["industries"])
+
+
+class IndustryReorderRequest(BaseModel):
+    """An ordered list of industry ids; each id's index becomes its ``position``."""
+
+    industry_ids: list[uuid.UUID]
 
 
 # ============================ ADMIN ============================
@@ -37,6 +44,13 @@ def list_industries(db: Session = Depends(get_db)):
 )
 def create_industry(data: schemas.IndustryCreate, db: Session = Depends(get_db)):
     return IndustryService(db).create(data)
+
+
+# Declared before /{industry_id} so "reorder" isn't parsed as an id.
+@admin_router.put("/reorder", status_code=status.HTTP_204_NO_CONTENT)
+def reorder_industries(data: IndustryReorderRequest, db: Session = Depends(get_db)):
+    """Persist a new industry display order (drag-and-drop in the admin list)."""
+    IndustryService(db).reorder(data.industry_ids)
 
 
 @admin_router.get("/{industry_id}", response_model=schemas.IndustryResponse)

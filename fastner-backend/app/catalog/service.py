@@ -435,6 +435,14 @@ class CatalogService:
         self.db.delete(product)
         self.db.commit()
 
+    def reorder_products(self, product_ids: list[uuid.UUID]) -> None:
+        """Assign ``position`` = list index for each product, in the given order."""
+        for pos, pid in enumerate(product_ids):
+            product = self.db.get(Product, pid)
+            if product is not None:
+                product.position = pos
+        self.db.commit()
+
     def get_product(self, product_id: uuid.UUID) -> Product:
         product = self.db.get(Product, product_id)
         if product is None:
@@ -446,6 +454,16 @@ class CatalogService:
         if product is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Product not found.")
         return product
+
+    def list_active_products(self) -> list[Product]:
+        """All active products — used to build the storefront sitemap."""
+        return list(
+            self.db.scalars(
+                select(Product)
+                .where(Product.is_active.is_(True))
+                .order_by(Product.position, Product.name)
+            ).all()
+        )
 
     def to_product_response(self, product: Product) -> schemas.ProductResponse:
         cats = [

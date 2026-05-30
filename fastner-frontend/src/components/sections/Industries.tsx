@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { INDUSTRIES } from "@/lib/site-data";
 import { usePublicIndustries } from "@/features/industries/queries";
 import SectionHeading from "@/components/ui/SectionHeading";
 
@@ -9,6 +8,8 @@ import SectionHeading from "@/components/ui/SectionHeading";
 const STEP_MS = 3000;
 /** Must match the `gap-6` (1.5rem) on the track below. */
 const GAP_PX = 24;
+/** Only scroll once there are more than this many cards; fewer sit static. */
+const SCROLL_THRESHOLD = 3;
 
 type Tile = { key: string; name: string; image: string | null; blurb: string | null };
 
@@ -54,25 +55,24 @@ function IndustryCard({ tile }: { tile: Tile }) {
 }
 
 export default function Industries() {
-  const { data } = usePublicIndustries();
+  const { data, isLoading } = usePublicIndustries();
 
-  // Live, admin-managed industries; until any exist, fall back to the static
-  // showcase list so the marketing page is never empty (same as Categories).
-  const tiles = useMemo<Tile[]>(() => {
-    const live = (data ?? []).map((i) => ({
-      key: i.id,
-      name: i.name,
-      image: i.image_url,
-      blurb: i.blurb,
-    }));
-    if (live.length > 0) return live;
-    return INDUSTRIES.map((i) => ({
-      key: i.name,
-      name: i.name,
-      image: i.image,
-      blurb: i.blurb,
-    }));
-  }, [data]);
+  // Live, admin-managed industries (see /admin/industries).
+  const tiles = useMemo<Tile[]>(
+    () =>
+      (data ?? []).map((i) => ({
+        key: i.id,
+        name: i.name,
+        image: i.image_url,
+        blurb: i.blurb,
+      })),
+    [data],
+  );
+
+  // Only run the scrolling carousel when there are enough cards to overflow.
+  // With 3 or fewer, show them static so a single industry doesn't get
+  // duplicated or animated.
+  const animated = tiles.length > SCROLL_THRESHOLD;
 
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -83,6 +83,7 @@ export default function Industries() {
   // Measure one card's width (+ gap) so we can shift by exactly one card.
   // Re-measures when the tile set changes (e.g. after live data loads).
   useEffect(() => {
+    if (!animated) return;
     const measure = () => {
       const first = trackRef.current?.firstElementChild as HTMLElement | null;
       if (first) setStep(first.offsetWidth + GAP_PX);
@@ -90,14 +91,14 @@ export default function Industries() {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [tiles.length]);
+  }, [animated, tiles.length]);
 
   // Auto-advance on a timer; paused on hover.
   useEffect(() => {
-    if (paused) return;
+    if (!animated || paused) return;
     const id = setInterval(() => setIndex((i) => i + 1), STEP_MS);
     return () => clearInterval(id);
-  }, [paused]);
+  }, [animated, paused]);
 
   // After sliding past the first full set (the duplicate looks identical),
   // snap back to the start with no transition for a seamless loop.
@@ -127,36 +128,58 @@ export default function Industries() {
         />
       </div>
 
-      {/* Full-bleed showcase. Cards step one position left on a timer; the row
-          pauses on hover. Edge fades hide the wrap-around. */}
-      <div
-        className="relative mt-14 overflow-hidden"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-      >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-white to-transparent sm:w-24"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-white to-transparent sm:w-24"
-        />
-
-        <div
-          ref={trackRef}
-          className="flex gap-6"
-          style={{
-            transform: `translateX(-${index * step}px)`,
-            transition: animate ? "transform 700ms ease" : "none",
-          }}
-          onTransitionEnd={onTransitionEnd}
-        >
-          {cards.map((tile, i) => (
-            <IndustryCard key={`${tile.key}-${i}`} tile={tile} />
+      {isLoading ? (
+        <div className="mx-auto mt-14 flex max-w-7xl gap-6 px-4 sm:px-6 lg:px-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-[4/3] w-56 shrink-0 animate-pulse rounded-2xl bg-ink-100 sm:w-80 lg:w-96"
+            />
           ))}
         </div>
-      </div>
+      ) : tiles.length === 0 ? (
+        <p className="mt-14 text-center text-sm text-ink-400">
+          No industries available yet.
+        </p>
+      ) : !animated ? (
+        /* Few enough to fit — static, centered, no duplication or animation. */
+        <div className="mx-auto mt-14 flex max-w-7xl flex-wrap justify-center gap-6 px-4 sm:px-6 lg:px-8">
+          {tiles.map((tile) => (
+            <IndustryCard key={tile.key} tile={tile} />
+          ))}
+        </div>
+      ) : (
+        /* Full-bleed showcase. Cards step one position left on a timer; the row
+           pauses on hover. Edge fades hide the wrap-around. */
+        <div
+          className="relative mt-14 overflow-hidden"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-white to-transparent sm:w-24"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-white to-transparent sm:w-24"
+          />
+
+          <div
+            ref={trackRef}
+            className="flex gap-6"
+            style={{
+              transform: `translateX(-${index * step}px)`,
+              transition: animate ? "transform 700ms ease" : "none",
+            }}
+            onTransitionEnd={onTransitionEnd}
+          >
+            {cards.map((tile, i) => (
+              <IndustryCard key={`${tile.key}-${i}`} tile={tile} />
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

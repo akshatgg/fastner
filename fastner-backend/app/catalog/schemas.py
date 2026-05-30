@@ -211,3 +211,12 @@ class ProductListResponse(BaseModel):
     page: int
     page_size: int
     facets: list[Facet] = []
+
+
+class ProductSitemapItem(BaseModel):
+    """Minimal product fields for building the storefront sitemap."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    slug: str
+    updated_at: datetime

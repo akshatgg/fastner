@@ -11,6 +11,7 @@ import {
   deleteIndustry,
   getIndustries,
   getPublicIndustries,
+  reorderIndustries,
   updateIndustry,
 } from "./api";
 import type { IndustryCreateInput, IndustryUpdateInput } from "./types";
@@ -79,5 +80,19 @@ export function useDeleteIndustry() {
       toast.success("Industry deleted.");
     },
     onError: (e) => toast.error(errorMessage(e, "Could not delete the industry.")),
+  });
+}
+
+/** Persist a drag-and-drop industry order. Reordered optimistically in the UI;
+ *  we only resync (and revert on failure) once the call settles. */
+export function useReorderIndustries() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (industryIds: string[]) => reorderIndustries(industryIds),
+    onError: (e) => toast.error(errorMessage(e, "Could not save the new order.")),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: industryKeys.list });
+      qc.invalidateQueries({ queryKey: industryKeys.publicList });
+    },
   });
 }

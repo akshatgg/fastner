@@ -1,5 +1,10 @@
 """Industries business logic — a flat, admin-managed list of marketing sectors."""
 
+# Annotations are deferred (PEP 563) so that the ``list[...]`` annotation on
+# ``reorder`` isn't evaluated at class-body time — where ``list`` would resolve
+# to this class's own ``list()`` method instead of the builtin.
+from __future__ import annotations
+
 import uuid
 
 from fastapi import HTTPException, status
@@ -78,4 +83,12 @@ class IndustryService:
     def delete(self, industry_id: uuid.UUID) -> None:
         industry = self._get(industry_id)
         self.db.delete(industry)
+        self.db.commit()
+
+    def reorder(self, industry_ids: list[uuid.UUID]) -> None:
+        """Assign ``position`` = list index for each industry, in the given order."""
+        for pos, iid in enumerate(industry_ids):
+            industry = self.db.get(Industry, iid)
+            if industry is not None:
+                industry.position = pos
         self.db.commit()

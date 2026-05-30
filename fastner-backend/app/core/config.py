@@ -53,5 +53,14 @@ class Settings:
     # Frontend base URL — used to build the verification link inside emails.
     FRONTEND_BASE_URL: str = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
 
+    # Cloudinary (server-side). Only needed for signed operations like deleting
+    # an image when a product/category is removed. The browser upload flow uses
+    # the public cloud name + unsigned preset and does NOT use these.
+    # The cloud name is the same value as the frontend's; the API key/secret are
+    # secret and must never be exposed to the client.
+    CLOUDINARY_CLOUD_NAME: str | None = os.getenv("CLOUDINARY_CLOUD_NAME")
+    CLOUDINARY_API_KEY: str | None = os.getenv("CLOUDINARY_API_KEY")
+    CLOUDINARY_API_SECRET: str | None = os.getenv("CLOUDINARY_API_SECRET")
+
 
 settings = Settings()

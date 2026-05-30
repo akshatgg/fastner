@@ -21,3 +21,9 @@ export const updateIndustry = (id: string, input: IndustryUpdateInput) =>
 
 export const deleteIndustry = (id: string) =>
   apiFetch<void>(`/admin/industries/${id}`, { method: "DELETE" });
+
+export const reorderIndustries = (industryIds: string[]) =>
+  apiFetch<void>("/admin/industries/reorder", {
+    method: "PUT",
+    body: { industry_ids: industryIds },
+  });

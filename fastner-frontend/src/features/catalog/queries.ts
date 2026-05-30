@@ -17,12 +17,14 @@ import {
   deleteFilterGroup,
   deleteFilterValue,
   deleteProduct,
+  getAdminCategoryProducts,
   getCategoryProducts,
   getCategoryTree,
   getFilterGroups,
   getProduct,
   getPublicCategoryTree,
   getPublicProduct,
+  reorderProducts,
   updateCategory,
   updateProduct,
 } from "./api";
@@ -44,6 +46,8 @@ export const catalogKeys = {
   product: (id: string) => ["catalog", "product", id] as const,
   categoryProducts: (id: string, filters: string[], page: number) =>
     ["catalog", "category-products", id, filters, page] as const,
+  adminCategoryProducts: (id: string) =>
+    ["catalog", "admin-category-products", id] as const,
   publicProduct: (slug: string) => ["catalog", "public-product", slug] as const,
 };
 
@@ -66,6 +70,16 @@ export function useCategoryProducts(
     queryFn: () =>
       getCategoryProducts(categoryId as string, { filterValueIds, page, pageSize: 24 }),
     enabled: Boolean(categoryId),
+  });
+}
+
+/** Admin: all products under a category (incl. inactive) for the tree view. */
+export function useAdminCategoryProducts(categoryId: string) {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  return useQuery({
+    queryKey: catalogKeys.adminCategoryProducts(categoryId),
+    queryFn: () => getAdminCategoryProducts(categoryId),
+    enabled: Boolean(accessToken) && Boolean(categoryId),
   });
 }
 
@@ -223,6 +237,7 @@ export function useCreateProduct() {
     mutationFn: (input: ProductCreateInput) => createProduct(input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: catalogKeys.categoryTree });
+      qc.invalidateQueries({ queryKey: ["catalog", "admin-category-products"] });
       toast.success("Product added.");
     },
     onError: (e) => toast.error(errorMessage(e, "Could not add the product.")),
@@ -236,6 +251,7 @@ export function useUpdateProduct() {
       updateProduct(id, input),
     onSuccess: (p) => {
       qc.invalidateQueries({ queryKey: catalogKeys.product(p.id) });
+      qc.invalidateQueries({ queryKey: ["catalog", "admin-category-products"] });
       toast.success("Product updated.");
     },
     onError: (e) => toast.error(errorMessage(e, "Could not update the product.")),
@@ -246,7 +262,22 @@ export function useDeleteProduct() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteProduct(id),
-    onSuccess: () => toast.success("Product deleted."),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["catalog", "admin-category-products"] });
+      toast.success("Product deleted.");
+    },
     onError: (e) => toast.error(errorMessage(e, "Could not delete the product.")),
+  });
+}
+
+/** Persist a drag-and-drop product order. The list is reordered optimistically
+ *  in the UI; we only resync (and revert on failure) once the call settles. */
+export function useReorderProducts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (productIds: string[]) => reorderProducts(productIds),
+    onError: (e) => toast.error(errorMessage(e, "Could not save the new order.")),
+    onSettled: () =>
+      qc.invalidateQueries({ queryKey: ["catalog", "admin-category-products"] }),
   });
 }
