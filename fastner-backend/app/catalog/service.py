@@ -367,6 +367,8 @@ class CatalogService:
             name=data.name, slug=slug, sku=data.sku,
             short_description=data.short_description, description=data.description,
             specifications=data.specifications, images=data.images,
+            price_b2c=data.price_b2c, price_b2b=data.price_b2b,
+            b2b_min_qty=data.b2b_min_qty,
             is_active=data.is_active, position=data.position,
         )
         self.db.add(product)
@@ -402,7 +404,8 @@ class CatalogService:
             product.sku = fields["sku"]
 
         for key in ("name", "short_description", "description", "specifications",
-                    "images", "is_active", "position"):
+                    "images", "price_b2c", "price_b2b", "b2b_min_qty",
+                    "is_active", "position"):
             if key in fields and fields[key] is not None:
                 setattr(product, key, fields[key])
 
@@ -467,6 +470,8 @@ class CatalogService:
             id=product.id, name=product.name, slug=product.slug, sku=product.sku,
             short_description=product.short_description, description=product.description,
             specifications=product.specifications, images=product.images,
+            price_b2c=product.price_b2c, price_b2b=product.price_b2b,
+            b2b_min_qty=product.b2b_min_qty,
             is_active=product.is_active, position=product.position,
             categories=cats, filter_values=fvs,
             created_at=product.created_at, updated_at=product.updated_at,

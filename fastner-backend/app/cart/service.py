@@ -1,8 +1,10 @@
-"""Cart business logic — a per-user, server-backed enquiry/quote cart.
+"""Cart business logic — a per-user, server-backed cart.
 
-Products carry no price in this catalog, so the cart is a quantity list the
-user assembles and submits as an enquiry. One row per (user, product); adding
-an existing product bumps its quantity.
+The cart is implicit: it's the set of ``cart_items`` rows for a ``user_id``,
+one row per product. The whole cart is priced in a single mode (B2C retail or
+B2B bulk); every row carries the same ``mode``, kept in sync here. Switching
+mode re-prices the cart and, for B2B, lifts each line to the product's bulk
+minimum quantity.
 """
 
 import uuid
@@ -14,6 +16,8 @@ from sqlalchemy.orm import Session
 from app.cart import schemas
 from app.cart.models import CartItem
 from app.catalog.models import Product
+
+_DEFAULT_MODE: schemas.CartMode = "b2c"
 
 
 class CartService:
@@ -41,8 +45,16 @@ class CartService:
             )
         return product
 
-    def _to_item_response(self, item: CartItem) -> schemas.CartItemResponse:
+    @staticmethod
+    def _unit_price(product: Product, mode: str) -> float | None:
+        price = product.price_b2b if mode == "b2b" else product.price_b2c
+        return float(price) if price is not None else None
+
+    def _to_item_response(
+        self, item: CartItem, mode: str
+    ) -> schemas.CartItemResponse:
         p = item.product
+        unit = self._unit_price(p, mode)
         return schemas.CartItemResponse(
             id=item.id,
             product_id=item.product_id,
@@ -53,16 +65,24 @@ class CartService:
             short_description=p.short_description,
             sku=p.sku,
             is_active=p.is_active,
+            unit_price=unit,
+            line_total=unit * item.quantity if unit is not None else None,
+            b2b_min_qty=p.b2b_min_qty,
             created_at=item.created_at,
             updated_at=item.updated_at,
         )
 
     def _build_cart(self, user_id: uuid.UUID) -> schemas.CartResponse:
         items = self._items(user_id)
+        mode = items[0].mode if items else _DEFAULT_MODE
+        responses = [self._to_item_response(i, mode) for i in items]
+        subtotal = sum(r.line_total or 0 for r in responses)
         return schemas.CartResponse(
-            items=[self._to_item_response(i) for i in items],
+            mode=mode,
+            items=responses,
             total_items=len(items),
             total_quantity=sum(i.quantity for i in items),
+            subtotal=subtotal,
         )
 
     # --- operations ----------------------------------------------------------
@@ -73,21 +93,34 @@ class CartService:
     def add_item(
         self, user_id: uuid.UUID, data: schemas.AddToCartRequest
     ) -> schemas.CartResponse:
-        self._get_active_product(data.product_id)
-        existing = self.db.scalar(
-            select(CartItem).where(
-                CartItem.user_id == user_id,
-                CartItem.product_id == data.product_id,
-            )
+        product = self._get_active_product(data.product_id)
+        items = self._items(user_id)
+
+        # One mode for the whole cart: adding in a different mode switches (and
+        # re-prices) every existing line.
+        if items and items[0].mode != data.mode:
+            for it in items:
+                it.mode = data.mode
+
+        existing = next(
+            (i for i in items if i.product_id == data.product_id), None
         )
+        new_qty = (existing.quantity if existing else 0) + data.quantity
+        # B2B is sold in bulk — never below the product's minimum.
+        if data.mode == "b2b":
+            new_qty = max(new_qty, product.b2b_min_qty)
+        new_qty = min(new_qty, 9999)
+
         if existing is not None:
-            existing.quantity = min(existing.quantity + data.quantity, 9999)
+            existing.quantity = new_qty
+            existing.mode = data.mode
         else:
             self.db.add(
                 CartItem(
                     user_id=user_id,
                     product_id=data.product_id,
-                    quantity=data.quantity,
+                    quantity=new_qty,
+                    mode=data.mode,
                 )
             )
         self.db.commit()
@@ -103,7 +136,22 @@ class CartService:
         )
         if item is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not in cart.")
+        # In B2B mode the line can't drop below the product's bulk minimum.
+        if item.mode == "b2b":
+            quantity = max(quantity, item.product.b2b_min_qty)
         item.quantity = quantity
+        self.db.commit()
+        return self._build_cart(user_id)
+
+    def set_mode(
+        self, user_id: uuid.UUID, mode: schemas.CartMode
+    ) -> schemas.CartResponse:
+        """Switch the whole cart between B2C and B2B, re-pricing every line and
+        lifting quantities to the bulk minimum when switching to B2B."""
+        for item in self._items(user_id):
+            item.mode = mode
+            if mode == "b2b":
+                item.quantity = max(item.quantity, item.product.b2b_min_qty)
         self.db.commit()
         return self._build_cart(user_id)
 

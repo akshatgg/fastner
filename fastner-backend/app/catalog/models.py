@@ -1,11 +1,13 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -100,6 +102,15 @@ class Product(Base):
     )
     images: Mapped[list] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    # Pricing. The same product is sold to retail (B2C) and bulk (B2B) buyers;
+    # only the per-piece rate differs. ``b2b_min_qty`` is the minimum quantity
+    # required to buy at the discounted B2B rate. Prices are nullable so a
+    # product can exist before pricing is set (older catalog rows have none).
+    price_b2c: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    price_b2b: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    b2b_min_qty: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default=text("1")
     )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default=text("true")

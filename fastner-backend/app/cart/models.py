@@ -5,6 +5,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    String,
     UniqueConstraint,
     func,
     text,
@@ -47,6 +48,11 @@ class CartItem(Base):
     )
     quantity: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default=text("1")
+    )
+    # Pricing mode for the whole cart — every row carries the same value, kept in
+    # sync by the service. "b2c" = retail rate, "b2b" = bulk/discounted rate.
+    mode: Mapped[str] = mapped_column(
+        String(8), nullable=False, default="b2c", server_default=text("'b2c'")
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

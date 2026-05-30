@@ -36,6 +36,13 @@ export default function ProductForm({
   const [sku, setSku] = useState(product?.sku ?? "");
   const [shortDesc, setShortDesc] = useState(product?.short_description ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
+  const [priceB2c, setPriceB2c] = useState(
+    product?.price_b2c != null ? String(product.price_b2c) : "",
+  );
+  const [priceB2b, setPriceB2b] = useState(
+    product?.price_b2b != null ? String(product.price_b2b) : "",
+  );
+  const [b2bMinQty, setB2bMinQty] = useState(String(product?.b2b_min_qty ?? 1));
   const [images, setImages] = useState<string[]>(product?.images ?? [""]);
   const [specs, setSpecs] = useState<SpecRow[]>(
     product
@@ -77,6 +84,12 @@ export default function ProductForm({
     const primary =
       primaryId && categoryIds.includes(primaryId) ? primaryId : categoryIds[0];
 
+    const parsePrice = (s: string) => {
+      const n = parseFloat(s);
+      return s.trim() && !Number.isNaN(n) ? n : null;
+    };
+    const minQty = Math.max(1, parseInt(b2bMinQty, 10) || 1);
+
     const payload = {
       name: name.trim(),
       sku: sku.trim() || null,
@@ -84,6 +97,9 @@ export default function ProductForm({
       description: description.trim() || null,
       specifications,
       images: cleanImages,
+      price_b2c: parsePrice(priceB2c),
+      price_b2b: parsePrice(priceB2b),
+      b2b_min_qty: minQty,
       category_ids: categoryIds,
       primary_category_id: primary,
       filter_value_ids: filterValueIds,
@@ -120,6 +136,45 @@ export default function ProductForm({
       <div>
         <label className={labelCls}>Description</label>
         <textarea className={inputCls} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+      </div>
+
+      {/* Pricing — same product, retail vs bulk rate */}
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className={labelCls}>B2C price (₹)</label>
+          <input
+            className={inputCls}
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder="Retail"
+            value={priceB2c}
+            onChange={(e) => setPriceB2c(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>B2B price (₹)</label>
+          <input
+            className={inputCls}
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder="Bulk rate"
+            value={priceB2b}
+            onChange={(e) => setPriceB2b(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>B2B min qty</label>
+          <input
+            className={inputCls}
+            type="number"
+            min={1}
+            step="1"
+            value={b2bMinQty}
+            onChange={(e) => setB2bMinQty(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Specifications (JSONB) */}

@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { ChevronRight, Minus, Plus, ShoppingCart } from "lucide-react";
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import ModeToggle from "@/components/ui/ModeToggle";
 import { usePublicProduct } from "@/features/catalog/queries";
 import { useAddToCart } from "@/features/cart/queries";
+import { formatPrice } from "@/lib/format";
+import { useModeStore } from "@/lib/store/mode-store";
 
 export default function ProductPage({
   params,
@@ -19,9 +22,19 @@ export default function ProductPage({
   const [active, setActive] = useState(0);
   const [qty, setQty] = useState(1);
   const addToCart = useAddToCart();
+  const mode = useModeStore((s) => s.mode);
 
   const primary = product?.categories.find((c) => c.is_primary) ?? product?.categories[0];
   const specs = product ? Object.entries(product.specifications) : [];
+
+  const isB2b = mode === "b2b";
+  const price = product ? (isB2b ? product.price_b2b : product.price_b2c) : null;
+  const minQty = isB2b ? (product?.b2b_min_qty ?? 1) : 1;
+
+  // Keep the quantity at or above the bulk minimum when in B2B mode.
+  useEffect(() => {
+    setQty((q) => Math.max(q, minQty));
+  }, [minQty]);
 
   return (
     <>
@@ -131,13 +144,46 @@ export default function ProductPage({
                     </div>
                   )}
 
-                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                  {/* Pricing */}
+                  <div className="mt-6 rounded-2xl border border-ink-100 bg-white p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+                        Buying as
+                      </span>
+                      <ModeToggle size="sm" />
+                    </div>
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <span className="font-display text-3xl font-bold text-ink-900">
+                        {formatPrice(price)}
+                      </span>
+                      {price != null && (
+                        <span className="text-sm text-ink-400">/ piece</span>
+                      )}
+                    </div>
+                    {isB2b ? (
+                      <p className="mt-1 text-sm font-medium text-brand-600">
+                        Bulk rate — minimum order {product.b2b_min_qty} pcs.
+                      </p>
+                    ) : (
+                      product.price_b2b != null && (
+                        <p className="mt-1 text-sm text-ink-500">
+                          Buying in bulk? Switch to B2B for{" "}
+                          {formatPrice(product.price_b2b)}/pc
+                          {product.b2b_min_qty > 1
+                            ? ` (min ${product.b2b_min_qty} pcs).`
+                            : "."}
+                        </p>
+                      )
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
                     <div className="flex items-center rounded-lg border border-ink-200">
                       <button
                         type="button"
-                        onClick={() => setQty((q) => Math.max(1, q - 1))}
+                        onClick={() => setQty((q) => Math.max(minQty, q - 1))}
                         className="p-2.5 text-ink-500 transition hover:text-brand-600 disabled:opacity-40"
-                        disabled={qty <= 1}
+                        disabled={qty <= minQty}
                         aria-label="Decrease quantity"
                       >
                         <Minus className="h-4 w-4" />

@@ -74,6 +74,9 @@ export type Product = {
   description: string | null;
   specifications: Record<string, unknown>;
   images: string[];
+  price_b2c: number | null;
+  price_b2b: number | null;
+  b2b_min_qty: number;
   is_active: boolean;
   position: number;
   categories: ProductCategoryRef[];
@@ -90,6 +93,9 @@ export type ProductCreateInput = {
   description?: string | null;
   specifications?: Record<string, unknown>;
   images?: string[];
+  price_b2c?: number | null;
+  price_b2b?: number | null;
+  b2b_min_qty?: number;
   is_active?: boolean;
   position?: number;
   category_ids?: string[];

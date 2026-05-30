@@ -7,6 +7,7 @@ import { ChevronRight, ShoppingCart } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ModeToggle from "@/components/ui/ModeToggle";
 import {
   useCategoryProducts,
   usePublicCategoryTree,
@@ -14,6 +15,8 @@ import {
 import { useAddToCart } from "@/features/cart/queries";
 import { findWithTrail } from "@/features/catalog/tree";
 import type { CategoryTreeNode, Product } from "@/features/catalog/types";
+import { formatPrice } from "@/lib/format";
+import { useModeStore } from "@/lib/store/mode-store";
 
 export default function CategoryPage({
   params,
@@ -129,8 +132,18 @@ function LeafProducts({ category }: { category: CategoryTreeNode }) {
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   return (
-    <div className="mt-10 flex flex-col gap-8 lg:flex-row">
-      {/* Filter sidebar */}
+    <div className="mt-8">
+      {/* Pricing mode — applies to every product in the list */}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-ink-100 bg-white px-4 py-3 shadow-card">
+        <span className="text-sm font-semibold text-ink-700">Buying as</span>
+        <ModeToggle />
+        <span className="text-xs text-ink-400">
+          B2B shows bulk rates — minimum order quantities apply.
+        </span>
+      </div>
+
+      <div className="mt-8 flex flex-col gap-8 lg:flex-row">
+        {/* Filter sidebar */}
       {data && data.facets.length > 0 && (
         <aside className="w-full shrink-0 lg:w-64">
           <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card">
@@ -167,13 +180,14 @@ function LeafProducts({ category }: { category: CategoryTreeNode }) {
         </aside>
       )}
 
-      {/* Product grid */}
-      <ProductGrid
-        isLoading={isLoading}
-        items={data?.items ?? []}
-        total={data?.total ?? 0}
-        hasFilters={selected.length > 0}
-      />
+        {/* Product grid */}
+        <ProductGrid
+          isLoading={isLoading}
+          items={data?.items ?? []}
+          total={data?.total ?? 0}
+          hasFilters={selected.length > 0}
+        />
+      </div>
     </div>
   );
 }
@@ -213,6 +227,10 @@ function ProductGrid({
 
 function ProductCard({ product }: { product: Product }) {
   const addToCart = useAddToCart();
+  const mode = useModeStore((s) => s.mode);
+
+  const price = mode === "b2b" ? product.price_b2b : product.price_b2c;
+  const isB2b = mode === "b2b";
 
   return (
     <div className="group flex flex-col rounded-xl border border-ink-100 bg-white p-3 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand-200 hover:shadow-lift">
@@ -236,6 +254,17 @@ function ProductCard({ product }: { product: Product }) {
           {product.name}
         </h3>
       </Link>
+
+      <div className="mt-2 flex items-baseline gap-1.5">
+        <span className="text-base font-bold text-ink-900">{formatPrice(price)}</span>
+        {price != null && <span className="text-xs text-ink-400">/ pc</span>}
+      </div>
+      {isB2b && product.b2b_min_qty > 1 && (
+        <p className="text-xs font-medium text-brand-600">
+          min {product.b2b_min_qty} pcs
+        </p>
+      )}
+
       <button
         type="button"
         onClick={() => addToCart.mutate({ product_id: product.id, quantity: 1 })}

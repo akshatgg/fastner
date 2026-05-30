@@ -120,6 +120,10 @@ class ProductCreate(BaseModel):
     description: str | None = None
     specifications: dict = {}
     images: list[str] = []
+    # Per-piece rates; B2B is the bulk/discounted rate, charged from b2b_min_qty up.
+    price_b2c: float | None = Field(default=None, ge=0)
+    price_b2b: float | None = Field(default=None, ge=0)
+    b2b_min_qty: int = Field(default=1, ge=1, le=9999)
     is_active: bool = True
     position: int = 0
     # Must reference leaf categories. The first (or primary_category_id, if given)
@@ -137,6 +141,9 @@ class ProductUpdate(BaseModel):
     description: str | None = None
     specifications: dict | None = None
     images: list[str] | None = None
+    price_b2c: float | None = Field(default=None, ge=0)
+    price_b2b: float | None = Field(default=None, ge=0)
+    b2b_min_qty: int | None = Field(default=None, ge=1, le=9999)
     is_active: bool | None = None
     position: int | None = None
     # When provided, replaces the existing set of links.
@@ -170,6 +177,9 @@ class ProductResponse(BaseModel):
     description: str | None
     specifications: dict
     images: list
+    price_b2c: float | None
+    price_b2b: float | None
+    b2b_min_qty: int
     is_active: bool
     position: int
     categories: list[ProductCategoryRef] = []

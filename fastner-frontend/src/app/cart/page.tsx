@@ -6,23 +6,28 @@ import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SectionHeading from "@/components/ui/SectionHeading";
+import ModeToggle from "@/components/ui/ModeToggle";
 import { useRequireAuth } from "@/features/auth/queries";
 import {
   useCart,
   useClearCart,
   useRemoveCartItem,
+  useSetCartMode,
   useUpdateCartItem,
 } from "@/features/cart/queries";
 import type { CartItem } from "@/features/cart/types";
+import { formatPrice } from "@/lib/format";
 
 export default function CartPage() {
   const isAuthed = useRequireAuth();
   const { data: cart, isLoading } = useCart();
   const clear = useClearCart();
+  const setMode = useSetCartMode();
 
   if (!isAuthed) return null;
 
   const items = cart?.items ?? [];
+  const mode = cart?.mode ?? "b2c";
 
   return (
     <>
@@ -55,12 +60,25 @@ export default function CartPage() {
               </Link>
             </div>
           ) : (
-            <div className="mt-10 grid gap-8 lg:grid-cols-3">
+            <>
+            <div className="mt-8 flex flex-wrap items-center gap-3 rounded-xl border border-ink-100 bg-white px-4 py-3 shadow-card">
+              <span className="text-sm font-semibold text-ink-700">Pricing</span>
+              <ModeToggle
+                value={mode}
+                onChange={(m) => setMode.mutate(m)}
+              />
+              {mode === "b2b" && (
+                <span className="text-xs text-ink-400">
+                  Bulk rates — quantities are held at each item's minimum.
+                </span>
+              )}
+            </div>
+            <div className="mt-6 grid gap-8 lg:grid-cols-3">
               <div className="lg:col-span-2">
                 <div className="overflow-hidden rounded-2xl border border-ink-100 bg-white shadow-card">
                   <ul className="divide-y divide-ink-100">
                     {items.map((item) => (
-                      <CartRow key={item.id} item={item} />
+                      <CartRow key={item.id} item={item} mode={mode} />
                     ))}
                   </ul>
                 </div>
@@ -92,6 +110,17 @@ export default function CartPage() {
                       {cart?.total_quantity ?? 0}
                     </span>
                   </div>
+                  <div className="mt-4 flex items-baseline justify-between border-t border-ink-100 pt-4">
+                    <span className="text-sm font-semibold text-ink-900">
+                      Subtotal
+                      <span className="ml-1.5 rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-ink-500">
+                        {mode}
+                      </span>
+                    </span>
+                    <span className="font-display text-xl font-bold text-ink-900">
+                      {formatPrice(cart?.subtotal ?? 0)}
+                    </span>
+                  </div>
                   <Link
                     href="/#contact"
                     className="mt-6 block rounded-lg bg-brand-500 px-6 py-3 text-center text-sm font-bold text-white transition hover:bg-brand-600"
@@ -99,11 +128,12 @@ export default function CartPage() {
                     Request a quote
                   </Link>
                   <p className="mt-3 text-center text-xs text-ink-400">
-                    We'll confirm availability and pricing for these items.
+                    Taxes and shipping are confirmed when we quote.
                   </p>
                 </div>
               </aside>
             </div>
+            </>
           )}
         </div>
       </main>
@@ -112,12 +142,14 @@ export default function CartPage() {
   );
 }
 
-function CartRow({ item }: { item: CartItem }) {
+function CartRow({ item, mode }: { item: CartItem; mode: "b2c" | "b2b" }) {
   const update = useUpdateCartItem();
   const remove = useRemoveCartItem();
 
+  const minQty = mode === "b2b" ? item.b2b_min_qty : 1;
+
   const setQty = (qty: number) => {
-    if (qty < 1) return;
+    if (qty < minQty) return;
     update.mutate({ productId: item.product_id, quantity: qty });
   };
 
@@ -149,6 +181,15 @@ function CartRow({ item }: { item: CartItem }) {
           {item.name}
         </Link>
         {item.sku && <p className="text-xs text-ink-400">SKU: {item.sku}</p>}
+        <p className="mt-0.5 text-sm text-ink-500">
+          {formatPrice(item.unit_price)}
+          {item.unit_price != null && " / pc"}
+        </p>
+        {mode === "b2b" && item.b2b_min_qty > 1 && (
+          <p className="text-xs font-medium text-brand-600">
+            min {item.b2b_min_qty} pcs
+          </p>
+        )}
         {!item.is_active && (
           <p className="text-xs font-semibold text-amber-600">
             No longer available
@@ -160,7 +201,7 @@ function CartRow({ item }: { item: CartItem }) {
       <div className="flex items-center rounded-lg border border-ink-200">
         <button
           onClick={() => setQty(item.quantity - 1)}
-          disabled={update.isPending || item.quantity <= 1}
+          disabled={update.isPending || item.quantity <= minQty}
           className="p-2 text-ink-500 transition hover:text-brand-600 disabled:opacity-40"
           aria-label="Decrease quantity"
         >
@@ -177,6 +218,10 @@ function CartRow({ item }: { item: CartItem }) {
         >
           <Plus className="h-4 w-4" />
         </button>
+      </div>
+
+      <div className="w-20 shrink-0 text-right text-sm font-semibold text-ink-900">
+        {formatPrice(item.line_total)}
       </div>
 
       <button

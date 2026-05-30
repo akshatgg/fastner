@@ -30,6 +30,15 @@ def add_to_cart(
     return CartService(db).add_item(user.id, data)
 
 
+@router.put("/mode", response_model=schemas.CartResponse)
+def set_cart_mode(
+    data: schemas.SetCartModeRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return CartService(db).set_mode(user.id, data.mode)
+
+
 @router.put("/items/{product_id}", response_model=schemas.CartResponse)
 def update_cart_item(
     product_id: uuid.UUID,
