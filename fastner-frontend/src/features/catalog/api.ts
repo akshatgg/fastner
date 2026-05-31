@@ -11,7 +11,9 @@ import type {
   Product,
   ProductCreateInput,
   ProductListResponse,
+  ProductSearchItem,
   ProductUpdateInput,
+  SearchResults,
 } from "./types";
 
 // --- public (storefront) ---
@@ -36,6 +38,19 @@ export const getCategoryProducts = (
 
 export const getPublicProduct = (slug: string) =>
   apiFetch<Product>(`/catalog/products/${slug}`, { auth: false });
+
+export const getRelatedProducts = (slug: string, limit = 8) =>
+  apiFetch<ProductSearchItem[]>(
+    `/catalog/products/${slug}/related?limit=${limit}`,
+    { auth: false },
+  );
+
+export const searchCatalog = (q: string, limit = 5) => {
+  const qs = new URLSearchParams({ q, limit: String(limit) });
+  return apiFetch<SearchResults>(`/catalog/search?${qs.toString()}`, {
+    auth: false,
+  });
+};
 
 // --- categories (admin) ---
 

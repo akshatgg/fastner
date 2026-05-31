@@ -44,6 +44,9 @@ class User(Base):
     email_verification_tokens: Mapped[list["EmailVerificationToken"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    password_reset_tokens: Mapped[list["PasswordResetToken"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class RefreshToken(Base):
@@ -102,3 +105,32 @@ class EmailVerificationToken(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="email_verification_tokens")
+
+
+class PasswordResetToken(Base):
+    """A single-use, expiring token backing a password-reset link.
+
+    Same pattern as the email-verification token: only the SHA-256 ``token_hash``
+    is stored (as the PK); the raw token lives solely in the emailed link, so a
+    DB leak can't reconstruct a working reset link. Consumed on a successful
+    password reset.
+    """
+
+    __tablename__ = "password_reset_tokens"
+
+    # SHA-256 of the raw token — deterministic lookup key.
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    user: Mapped["User"] = relationship(back_populates="password_reset_tokens")

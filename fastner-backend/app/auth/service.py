@@ -10,8 +10,14 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.auth import helpers
-from app.auth.models import EmailVerificationToken, RefreshToken, User
+from app.auth.models import (
+    EmailVerificationToken,
+    PasswordResetToken,
+    RefreshToken,
+    User,
+)
 from app.auth.schemas import (
+    ProfileUpdate,
     SignInRequest,
     SignUpRequest,
     SignUpResponse,
@@ -34,6 +40,24 @@ class AuthService:
 
     def get_user_by_id(self, user_id: uuid.UUID) -> User | None:
         return self.db.get(User, user_id)
+
+    # --- self-service profile ------------------------------------------------
+
+    def update_profile(self, user: User, data: ProfileUpdate) -> User:
+        """Update the signed-in user's own editable fields (name, phone).
+
+        Only fields actually provided are touched, so a partial update can set
+        just the phone without clearing the name. An empty-string phone clears
+        it (back to "no number on file")."""
+        fields = data.model_dump(exclude_unset=True)
+        if "full_name" in fields and fields["full_name"] is not None:
+            user.full_name = fields["full_name"].strip()
+        if "phone" in fields:
+            phone = fields["phone"]
+            user.phone = phone.strip() or None if phone is not None else None
+        self.db.commit()
+        self.db.refresh(user)
+        return user
 
     # --- admin: user management ----------------------------------------------
 
@@ -173,6 +197,69 @@ class AuthService:
         )
         self.db.commit()
         self._send_verification(user)
+
+    # --- password reset ------------------------------------------------------
+
+    def request_password_reset(self, email: str) -> None:
+        """Issue a fresh password-reset email if the account exists. Always
+        silent (no error if the email is unknown) so we don't leak which emails
+        are registered."""
+        user = self.get_user_by_email(email)
+        # Google-only accounts have no password to reset — skip silently too.
+        if user is None or user.hashed_password is None:
+            return
+        # Invalidate any outstanding reset tokens so only the newest link works.
+        self.db.execute(
+            delete(PasswordResetToken).where(PasswordResetToken.user_id == user.id)
+        )
+        raw_token = helpers.generate_password_reset_token()
+        self.db.add(
+            PasswordResetToken(
+                token_hash=helpers.hash_password_reset_token(raw_token),
+                user_id=user.id,
+                expires_at=helpers.password_reset_token_expiry(),
+            )
+        )
+        self.db.commit()
+        try:
+            helpers.send_password_reset_email(user.email, user.full_name, raw_token)
+        except Exception:  # noqa: BLE001 — a send failure shouldn't 500 the request
+            logger.exception("Failed to send password-reset email to %s", user.email)
+
+    def reset_password(self, raw_token: str, new_password: str) -> None:
+        """Consume a reset token and set the user's new password.
+
+        Resetting also revokes every existing refresh token for the user, so any
+        sessions opened with the old password are logged out."""
+        invalid = HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This reset link is invalid or has already been used.",
+        )
+        record = self.db.get(
+            PasswordResetToken, helpers.hash_password_reset_token(raw_token)
+        )
+        if record is None:
+            raise invalid
+
+        if record.expires_at <= datetime.now(timezone.utc):
+            self.db.delete(record)
+            self.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This reset link has expired. Please request a new one.",
+            )
+
+        user = self.db.get(User, record.user_id)
+        if user is None:
+            self.db.delete(record)
+            self.db.commit()
+            raise invalid
+
+        user.hashed_password = helpers.hash_password(new_password)
+        self.db.delete(record)  # single-use
+        # Revoke all sessions: old credentials must not stay valid after a reset.
+        self.db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
+        self.db.commit()
 
     # --- refresh-token flow --------------------------------------------------
 

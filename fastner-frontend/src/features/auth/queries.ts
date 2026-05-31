@@ -9,16 +9,24 @@ import { ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/auth-store";
 
 import {
+  forgotPasswordRequest,
   listUsers,
   loginRequest,
   logoutRequest,
   meRequest,
   resendVerificationRequest,
+  resetPasswordRequest,
   signupRequest,
+  updateProfileRequest,
   updateUserRole,
   verifyEmailRequest,
 } from "./api";
-import type { SignInInput, SignUpInput, TokenResponse } from "./types";
+import type {
+  ProfileUpdateInput,
+  SignInInput,
+  SignUpInput,
+  TokenResponse,
+} from "./types";
 
 /** Pull a human-readable message out of an unknown thrown value. */
 function errorMessage(error: unknown, fallback: string): string {
@@ -103,6 +111,32 @@ export function useResendVerification() {
   });
 }
 
+/** Request a password-reset email. Always reports success (the backend is
+ *  deliberately silent about whether the email is registered). */
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (email: string) => forgotPasswordRequest(email),
+    onSuccess: (res) => toast.success(res.message),
+    onError: (error) =>
+      toast.error(errorMessage(error, "Could not send the reset email.")),
+  });
+}
+
+/** Set a new password from a reset-link token, then route to sign-in. */
+export function useResetPassword() {
+  const router = useRouter();
+  return useMutation({
+    mutationFn: ({ token, password }: { token: string; password: string }) =>
+      resetPasswordRequest(token, password),
+    onSuccess: (res) => {
+      toast.success(res.message);
+      router.push("/sign-in");
+    },
+    onError: (error) =>
+      toast.error(errorMessage(error, "Could not reset your password.")),
+  });
+}
+
 export function useLogout() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -160,6 +194,23 @@ export function useCurrentUser() {
     queryKey: authKeys.me,
     queryFn: meRequest,
     enabled: Boolean(accessToken),
+  });
+}
+
+/** Update the signed-in user's own profile (name, phone) and sync the store. */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  const setUser = useAuthStore((s) => s.setUser);
+
+  return useMutation({
+    mutationFn: (input: ProfileUpdateInput) => updateProfileRequest(input),
+    onSuccess: (user) => {
+      setUser(user);
+      queryClient.setQueryData(authKeys.me, user);
+      toast.success("Profile updated.");
+    },
+    onError: (error) =>
+      toast.error(errorMessage(error, "Could not update your profile.")),
   });
 }
 

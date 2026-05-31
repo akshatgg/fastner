@@ -122,8 +122,14 @@ export default function CartPage() {
                     </span>
                   </div>
                   <Link
-                    href="/#contact"
+                    href="/checkout"
                     className="mt-6 block rounded-lg bg-brand-500 px-6 py-3 text-center text-sm font-bold text-white transition hover:bg-brand-600"
+                  >
+                    Proceed to checkout
+                  </Link>
+                  <Link
+                    href="/#contact"
+                    className="mt-3 block rounded-lg border border-ink-200 px-6 py-3 text-center text-sm font-bold text-ink-700 transition hover:bg-ink-50"
                   >
                     Request a quote
                   </Link>

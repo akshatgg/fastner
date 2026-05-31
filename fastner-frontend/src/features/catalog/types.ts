@@ -65,6 +65,12 @@ export type ProductFilterValueRef = {
   group_name: string;
 };
 
+export type ProductIndustryRef = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -81,6 +87,7 @@ export type Product = {
   position: number;
   categories: ProductCategoryRef[];
   filter_values: ProductFilterValueRef[];
+  industries: ProductIndustryRef[];
   created_at: string;
   updated_at: string;
 };
@@ -101,6 +108,7 @@ export type ProductCreateInput = {
   category_ids?: string[];
   primary_category_id?: string | null;
   filter_value_ids?: string[];
+  industry_ids?: string[];
 };
 
 export type ProductUpdateInput = Partial<ProductCreateInput>;
@@ -120,4 +128,33 @@ export type ProductListResponse = {
   page: number;
   page_size: number;
   facets: Facet[];
+};
+
+// --- search ---
+
+export type ProductSearchItem = {
+  id: string;
+  name: string;
+  slug: string;
+  sku: string | null;
+  image_url: string | null;
+  short_description: string | null;
+  description: string | null;
+  price_b2c: number | null;
+  price_b2b: number | null;
+  industries: ProductIndustryRef[];
+};
+
+export type CategorySearchItem = {
+  id: string;
+  name: string;
+  slug: string;
+  path: string;
+  image_url: string | null;
+};
+
+export type SearchResults = {
+  query: string;
+  products: ProductSearchItem[];
+  categories: CategorySearchItem[];
 };

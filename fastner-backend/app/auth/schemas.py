@@ -17,6 +17,14 @@ class SignInRequest(BaseModel):
     password: str
 
 
+class ProfileUpdate(BaseModel):
+    """Self-service profile edits. Only fields the user is allowed to change —
+    email/role/verification are intentionally not editable here."""
+
+    full_name: str | None = Field(default=None, min_length=1, max_length=255)
+    phone: str | None = Field(default=None, max_length=32)
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
 
@@ -27,6 +35,15 @@ class VerifyEmailRequest(BaseModel):
 
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str = Field(min_length=8, max_length=128)
 
 
 class TokenResponse(BaseModel):

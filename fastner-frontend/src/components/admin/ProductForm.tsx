@@ -8,6 +8,7 @@ import {
   useFilterGroups,
   useUpdateProduct,
 } from "@/features/catalog/queries";
+import { useIndustries } from "@/features/industries/queries";
 import type { Product } from "@/features/catalog/types";
 import ImageUpload from "@/components/admin/ImageUpload";
 
@@ -32,6 +33,7 @@ export default function ProductForm({
   const create = useCreateProduct();
   const update = useUpdateProduct();
   const { data: groups = [] } = useFilterGroups();
+  const { data: industries = [] } = useIndustries();
 
   const [name, setName] = useState(product?.name ?? "");
   const [sku, setSku] = useState(product?.sku ?? "");
@@ -67,6 +69,9 @@ export default function ProductForm({
   );
   const [filterValueIds, setFilterValueIds] = useState<string[]>(
     product?.filter_values.map((f) => f.id) ?? [],
+  );
+  const [industryIds, setIndustryIds] = useState<string[]>(
+    product?.industries.map((i) => i.id) ?? [],
   );
 
   const toggle = (list: string[], id: string) =>
@@ -104,6 +109,7 @@ export default function ProductForm({
       category_ids: categoryIds,
       primary_category_id: primary,
       filter_value_ids: filterValueIds,
+      industry_ids: industryIds,
     };
 
     if (editing && product) {
@@ -311,6 +317,32 @@ export default function ProductForm({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Industries served — surfaced when the industry is searched */}
+      {industries.length > 0 && (
+        <div>
+          <label className={labelCls}>Industries served</label>
+          <div className="flex flex-wrap gap-2 rounded-lg border border-ink-100 p-3">
+            {industries.map((ind) => {
+              const on = industryIds.includes(ind.id);
+              return (
+                <button
+                  type="button"
+                  key={ind.id}
+                  onClick={() => setIndustryIds((l) => toggle(l, ind.id))}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                    on
+                      ? "border-brand-500 bg-brand-50 text-brand-700"
+                      : "border-ink-200 text-ink-600 hover:border-ink-300"
+                  }`}
+                >
+                  {ind.name}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

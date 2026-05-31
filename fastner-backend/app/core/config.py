@@ -44,6 +44,10 @@ class Settings:
     EMAIL_VERIFICATION_EXPIRE_HOURS: int = int(
         os.getenv("EMAIL_VERIFICATION_EXPIRE_HOURS", "24")
     )
+    # Password-reset links are shorter-lived than verification links by default.
+    PASSWORD_RESET_EXPIRE_HOURS: int = int(
+        os.getenv("PASSWORD_RESET_EXPIRE_HOURS", "2")
+    )
 
     # Postmark transactional email (only needed when AUTO_VERIFY_EMAIL is False).
     POSTMARK_SERVER_TOKEN: str | None = os.getenv("POSTMARK_SERVER_TOKEN")

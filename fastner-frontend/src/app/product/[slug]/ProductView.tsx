@@ -2,20 +2,24 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronRight, Minus, Plus, ShoppingCart } from "lucide-react";
+import { ChevronRight, Download, Loader2, Minus, Plus, ShoppingCart } from "lucide-react";
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ModeToggle from "@/components/ui/ModeToggle";
-import { usePublicProduct } from "@/features/catalog/queries";
+import { usePublicProduct, useRelatedProducts } from "@/features/catalog/queries";
 import { useAddToCart } from "@/features/cart/queries";
 import { formatPrice } from "@/lib/format";
+import { downloadProductPdf } from "@/lib/product-pdf";
+import type { ProductSearchItem } from "@/features/catalog/types";
 import { useModeStore } from "@/lib/store/mode-store";
+import ProductReviews from "./ProductReviews";
 
 export default function ProductView({ slug }: { slug: string }) {
   const { data: product, isLoading, isError } = usePublicProduct(slug);
   const [active, setActive] = useState(0);
   const [qty, setQty] = useState(1);
+  const [downloading, setDownloading] = useState(false);
   const addToCart = useAddToCart();
   const mode = useModeStore((s) => s.mode);
 
@@ -31,11 +35,21 @@ export default function ProductView({ slug }: { slug: string }) {
     setQty((q) => Math.max(q, minQty));
   }, [minQty]);
 
+  const handleDownload = async () => {
+    if (!product) return;
+    setDownloading(true);
+    try {
+      await downloadProductPdf(product);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <>
       <Header />
       <main className="flex-1 bg-ink-50 py-12 sm:py-16">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10">
           {isLoading ? (
             <p className="py-20 text-center text-sm text-ink-400">Loading…</p>
           ) : isError || !product ? (
@@ -63,35 +77,35 @@ export default function ProductView({ slug }: { slug: string }) {
                 <span className="font-semibold text-ink-900">{product.name}</span>
               </nav>
 
-              <div className="mt-6 grid gap-8 md:grid-cols-2">
-                {/* Gallery */}
-                <div>
+              <div className="mt-6 grid gap-10 md:grid-cols-2 lg:grid-cols-[1.25fr_1fr]">
+                {/* Gallery — larger image, sticky on desktop so it fills the space */}
+                <div className="lg:sticky lg:top-24 lg:self-start">
                   <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border border-ink-100 bg-white">
                     {product.images[active] ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={product.images[active]}
                         alt={product.name}
-                        className="h-full w-full object-contain p-6"
+                        className="h-full w-full object-contain p-8"
                       />
                     ) : (
-                      <span className="font-display text-6xl font-bold text-ink-200">
+                      <span className="font-display text-8xl font-bold text-ink-200">
                         {product.name.trim().charAt(0).toUpperCase()}
                       </span>
                     )}
                   </div>
                   {product.images.length > 1 && (
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-3 flex flex-wrap gap-2.5">
                       {product.images.map((img, i) => (
                         <button
                           key={i}
                           onClick={() => setActive(i)}
-                          className={`flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border bg-white ${
-                            i === active ? "border-brand-500" : "border-ink-100"
+                          className={`flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border bg-white ${
+                            i === active ? "border-brand-500 ring-2 ring-brand-500/20" : "border-ink-100"
                           }`}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={img} alt="" className="h-full w-full object-contain p-1" />
+                          <img src={img} alt="" className="h-full w-full object-contain p-1.5" />
                         </button>
                       ))}
                     </div>
@@ -100,7 +114,7 @@ export default function ProductView({ slug }: { slug: string }) {
 
                 {/* Details */}
                 <div>
-                  <h1 className="font-display text-2xl font-bold uppercase text-ink-900">
+                  <h1 className="font-display text-3xl font-bold uppercase leading-tight text-ink-900 lg:text-4xl">
                     {product.name}
                   </h1>
                   {product.sku && (
@@ -136,6 +150,24 @@ export default function ProductView({ slug }: { slug: string }) {
                           </div>
                         ))}
                       </dl>
+                    </div>
+                  )}
+
+                  {product.industries.length > 0 && (
+                    <div className="mt-6 rounded-2xl border border-ink-100 bg-white p-5">
+                      <p className="font-display text-sm font-bold uppercase text-ink-900">
+                        Industries Served
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {product.industries.map((ind) => (
+                          <span
+                            key={ind.id}
+                            className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700"
+                          >
+                            {ind.name}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -208,9 +240,23 @@ export default function ProductView({ slug }: { slug: string }) {
                     </button>
                   </div>
 
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    disabled={downloading}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg border border-ink-200 px-5 py-2.5 text-sm font-semibold text-ink-700 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 disabled:opacity-50"
+                  >
+                    {downloading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {downloading ? "Preparing PDF…" : "Download spec sheet (PDF)"}
+                  </button>
+
                   <Link
                     href="/#contact"
-                    className="mt-3 inline-block text-sm font-semibold text-ink-500 transition hover:text-brand-600"
+                    className="mt-3 block text-sm font-semibold text-ink-500 transition hover:text-brand-600"
                   >
                     Or enquire about this product →
                   </Link>
@@ -225,11 +271,69 @@ export default function ProductView({ slug }: { slug: string }) {
                   <p className="mt-3 whitespace-pre-line text-ink-600">{product.description}</p>
                 </div>
               )}
+
+              <ProductReviews slug={slug} />
+
+              <RelatedProducts slug={slug} />
             </>
           )}
         </div>
       </main>
       <Footer />
     </>
+  );
+}
+
+function RelatedProducts({ slug }: { slug: string }) {
+  const { data } = useRelatedProducts(slug);
+  if (!data || data.length === 0) return null;
+
+  return (
+    <section className="mt-14">
+      <h2 className="font-display text-xl font-bold uppercase tracking-wide text-ink-900">
+        You may also like
+      </h2>
+      <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {data.map((p) => (
+          <RelatedCard key={p.id} product={p} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RelatedCard({ product }: { product: ProductSearchItem }) {
+  return (
+    <Link
+      href={`/product/${product.slug}`}
+      className="group flex flex-col rounded-xl border border-ink-100 bg-white p-3 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand-200 hover:shadow-lift"
+    >
+      <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-ink-50">
+        {product.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={product.image_url}
+            alt={product.name}
+            className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <span className="font-display text-3xl font-bold text-ink-200">
+            {product.name.trim().charAt(0).toUpperCase()}
+          </span>
+        )}
+      </div>
+      <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-ink-900">
+        {product.name}
+      </h3>
+      {product.price_b2c != null && (
+        <div className="mt-1 flex items-baseline gap-1.5">
+          <span className="text-base font-bold text-ink-900">
+            {formatPrice(product.price_b2c)}
+          </span>
+          <span className="text-xs text-ink-400">/ pc</span>
+        </div>
+      )}
+    </Link>
   );
 }

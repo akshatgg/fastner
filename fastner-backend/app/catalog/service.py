@@ -12,7 +12,7 @@ import uuid
 from collections import defaultdict
 
 from fastapi import HTTPException, status
-from sqlalchemy import delete, distinct, func, select
+from sqlalchemy import Text, cast, delete, distinct, func, select
 from sqlalchemy.orm import Session
 
 from app.catalog.helpers import slugify
@@ -23,7 +23,9 @@ from app.catalog.models import (
     Product,
     ProductCategory,
     ProductFilterValue,
+    ProductIndustry,
 )
+from app.industries.models import Industry
 from app.catalog import schemas
 
 
@@ -324,6 +326,11 @@ class CatalogService:
             if self.db.get(FilterValue, vid) is None:
                 raise HTTPException(status.HTTP_404_NOT_FOUND, f"Filter value {vid} not found.")
 
+    def _validate_industries(self, industry_ids: list[uuid.UUID]) -> None:
+        for iid in industry_ids:
+            if self.db.get(Industry, iid) is None:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, f"Industry {iid} not found.")
+
     def _set_category_links(
         self,
         product: Product,
@@ -350,9 +357,16 @@ class CatalogService:
                 ProductFilterValue(product_id=product.id, filter_value_id=vid)
             )
 
+    def _set_industry_links(
+        self, product: Product, industry_ids: list[uuid.UUID]
+    ) -> None:
+        for iid in dict.fromkeys(industry_ids):
+            self.db.add(ProductIndustry(product_id=product.id, industry_id=iid))
+
     def create_product(self, data: schemas.ProductCreate) -> Product:
         self._validate_leaf_categories(data.category_ids)
         self._validate_filter_values(data.filter_value_ids)
+        self._validate_industries(data.industry_ids)
 
         base = slugify(data.slug or data.name)
         slug, n = base, 1
@@ -375,6 +389,7 @@ class CatalogService:
         self.db.flush()  # assign product.id before adding links
         self._set_category_links(product, data.category_ids, data.primary_category_id)
         self._set_filter_links(product, data.filter_value_ids)
+        self._set_industry_links(product, data.industry_ids)
         self.db.commit()
         self.db.refresh(product)
         return product
@@ -423,6 +438,13 @@ class CatalogService:
             )
             self.db.flush()
             self._set_filter_links(product, data.filter_value_ids)
+        if data.industry_ids is not None:
+            self._validate_industries(data.industry_ids)
+            self.db.execute(
+                delete(ProductIndustry).where(ProductIndustry.product_id == product_id)
+            )
+            self.db.flush()
+            self._set_industry_links(product, data.industry_ids)
 
         self.db.commit()
         self.db.refresh(product)
@@ -465,6 +487,113 @@ class CatalogService:
             ).all()
         )
 
+    def search(self, query: str, limit: int = 5) -> schemas.SearchResults:
+        """Storefront type-ahead search: the top ``limit`` active products,
+        matched on name, SKU, descriptions, and specification values. Each item
+        carries a thumbnail and blurb for the dropdown + detail preview."""
+        q = query.strip()
+        if not q:
+            return schemas.SearchResults(query=query)
+
+        like = f"%{q.lower()}%"
+
+        # Products that serve an industry whose name matches the query — so
+        # searching e.g. "aerospace" or "factory" surfaces the tagged products.
+        industry_match = (
+            select(ProductIndustry.product_id)
+            .join(Industry, Industry.id == ProductIndustry.industry_id)
+            .where(func.lower(Industry.name).like(like))
+        )
+
+        products = self.db.scalars(
+            select(Product)
+            .where(Product.is_active.is_(True))
+            .where(
+                func.lower(Product.name).like(like)
+                | func.lower(Product.sku).like(like)
+                | func.lower(Product.short_description).like(like)
+                | func.lower(Product.description).like(like)
+                # JSONB cast to text so spec keys/values are searchable too.
+                | func.lower(cast(Product.specifications, Text)).like(like)
+                | Product.id.in_(industry_match)
+            )
+            .order_by(Product.position, Product.name)
+            .limit(limit)
+        ).all()
+
+        return schemas.SearchResults(
+            query=q,
+            products=[self._to_search_item(p) for p in products],
+        )
+
+    @staticmethod
+    def _to_search_item(p: Product) -> schemas.ProductSearchItem:
+        return schemas.ProductSearchItem(
+            id=p.id,
+            name=p.name,
+            slug=p.slug,
+            sku=p.sku,
+            image_url=p.images[0] if p.images else None,
+            short_description=p.short_description,
+            description=p.description,
+            price_b2c=p.price_b2c,
+            price_b2b=p.price_b2b,
+            industries=CatalogService._industry_refs(p),
+        )
+
+    def related_products(
+        self, slug: str, limit: int = 8
+    ) -> list[schemas.ProductSearchItem]:
+        """Products related to the one at ``slug`` — its siblings across EVERY
+        category the product belongs to, not just its primary one. A product can
+        live in several categories, and a shopper reaches it by browsing one of
+        them; keying off only the primary category would hide the siblings from
+        whichever category they actually came through. If the product's own
+        categories don't yield enough, widen to those categories' parent subtrees.
+        Excludes the product itself."""
+        product = self.get_product_by_slug(slug)
+        links = product.category_links
+        if not links:
+            return []
+
+        # Siblings in any category the product is filed under.
+        own_category_ids = [link.category_id for link in links]
+        found = self._related_in_categories(own_category_ids, product.id, limit)
+
+        # Still short? Widen to the parent subtree of each of those categories.
+        if len(found) < limit:
+            widened: set[uuid.UUID] = set(own_category_ids)
+            for link in links:
+                cat = link.category
+                if cat.parent_id:
+                    parent = self.db.get(Category, cat.parent_id)
+                    if parent is not None:
+                        widened.update(self._subtree_category_ids(parent))
+            if len(widened) > len(own_category_ids):
+                found = self._related_in_categories(
+                    list(widened), product.id, limit
+                )
+        return [self._to_search_item(p) for p in found]
+
+    def _related_in_categories(
+        self, category_ids: list[uuid.UUID], exclude_id: uuid.UUID, limit: int
+    ) -> list[Product]:
+        product_ids = (
+            select(distinct(ProductCategory.product_id))
+            .where(ProductCategory.category_id.in_(category_ids))
+            .scalar_subquery()
+        )
+        return list(
+            self.db.scalars(
+                select(Product)
+                .where(Product.id.in_(product_ids))
+                .where(Product.id != exclude_id)
+                .where(Product.is_active.is_(True))
+                .order_by(Product.position, Product.name)
+                .limit(limit)
+            ).all()
+        )
+
     def to_product_response(self, product: Product) -> schemas.ProductResponse:
         cats = [
             schemas.ProductCategoryRef(
@@ -492,8 +621,18 @@ class CatalogService:
             b2b_min_qty=product.b2b_min_qty,
             is_active=product.is_active, position=product.position,
             categories=cats, filter_values=fvs,
+            industries=self._industry_refs(product),
             created_at=product.created_at, updated_at=product.updated_at,
         )
+
+    @staticmethod
+    def _industry_refs(product: Product) -> list[schemas.ProductIndustryRef]:
+        return [
+            schemas.ProductIndustryRef(
+                id=link.industry.id, name=link.industry.name, slug=link.industry.slug
+            )
+            for link in product.industry_links
+        ]
 
     # --- storefront listing (roll-up + facets) -------------------------------
 

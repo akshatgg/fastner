@@ -5,9 +5,12 @@ from sqlalchemy.orm import Session
 
 from app.auth.models import User
 from app.auth.schemas import (
+    ForgotPasswordRequest,
     MessageResponse,
+    ProfileUpdate,
     RefreshRequest,
     ResendVerificationRequest,
+    ResetPasswordRequest,
     SignInRequest,
     SignUpRequest,
     SignUpResponse,
@@ -50,6 +53,26 @@ def resend_verification(
     )
 
 
+@router.post("/forgot-password", response_model=MessageResponse)
+def forgot_password(
+    data: ForgotPasswordRequest, db: Session = Depends(get_db)
+) -> MessageResponse:
+    AuthService(db).request_password_reset(data.email)
+    return MessageResponse(
+        message="If that account exists, a password reset link is on its way."
+    )
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+def reset_password(
+    data: ResetPasswordRequest, db: Session = Depends(get_db)
+) -> MessageResponse:
+    AuthService(db).reset_password(data.token, data.password)
+    return MessageResponse(
+        message="Your password has been reset. You can now sign in."
+    )
+
+
 @router.post("/login", response_model=TokenResponse)
 def login(data: SignInRequest, db: Session = Depends(get_db)) -> TokenResponse:
     return AuthService(db).authenticate(data)
@@ -68,6 +91,15 @@ def logout(data: RefreshRequest, db: Session = Depends(get_db)) -> None:
 @router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(
+    data: ProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    return AuthService(db).update_profile(current_user, data)
 
 
 # ============================ ADMIN: users ============================

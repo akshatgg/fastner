@@ -20,11 +20,13 @@ import { NAV_LINKS, SITE } from "@/lib/site-data";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useLogout } from "@/features/auth/queries";
 import { useCartCount } from "@/features/cart/queries";
+import SearchOverlay from "@/components/layout/SearchOverlay";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   // Gate auth-dependent UI behind mount so the persisted store doesn't cause a
   // server/client hydration mismatch (server always renders the logged-out view).
   const [mounted, setMounted] = useState(false);
@@ -122,7 +124,8 @@ export default function Header() {
             <button
               type="button"
               aria-label="Search"
-              className="hidden items-center justify-center rounded-md p-2.5 text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600 sm:inline-flex"
+              onClick={() => setSearchOpen(true)}
+              className="inline-flex items-center justify-center rounded-md p-2.5 text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
             >
               <Search className="h-6 w-6" />
             </button>
@@ -346,6 +349,8 @@ export default function Header() {
           </nav>
         </div>
       )}
+
+      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   );
 }

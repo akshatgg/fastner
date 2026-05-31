@@ -4,6 +4,7 @@ import { apiFetch } from "@/lib/api/client";
 
 import type {
   MessageResponse,
+  ProfileUpdateInput,
   SignInInput,
   SignUpInput,
   SignUpResponse,
@@ -32,6 +33,20 @@ export const resendVerificationRequest = (email: string) =>
     auth: false,
   });
 
+export const forgotPasswordRequest = (email: string) =>
+  apiFetch<MessageResponse>("/auth/forgot-password", {
+    method: "POST",
+    body: { email },
+    auth: false,
+  });
+
+export const resetPasswordRequest = (token: string, password: string) =>
+  apiFetch<MessageResponse>("/auth/reset-password", {
+    method: "POST",
+    body: { token, password },
+    auth: false,
+  });
+
 export const loginRequest = (input: SignInInput) =>
   apiFetch<TokenResponse>("/auth/login", {
     method: "POST",
@@ -40,6 +55,9 @@ export const loginRequest = (input: SignInInput) =>
   });
 
 export const meRequest = () => apiFetch<User>("/auth/me");
+
+export const updateProfileRequest = (input: ProfileUpdateInput) =>
+  apiFetch<User>("/auth/me", { method: "PATCH", body: input });
 
 export const logoutRequest = (refreshToken: string) =>
   apiFetch<void>("/auth/logout", {

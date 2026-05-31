@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -24,7 +29,9 @@ import {
   getProduct,
   getPublicCategoryTree,
   getPublicProduct,
+  getRelatedProducts,
   reorderProducts,
+  searchCatalog,
   updateCategory,
   updateProduct,
 } from "./api";
@@ -49,6 +56,9 @@ export const catalogKeys = {
   adminCategoryProducts: (id: string) =>
     ["catalog", "admin-category-products", id] as const,
   publicProduct: (slug: string) => ["catalog", "public-product", slug] as const,
+  related: (slug: string, limit: number) =>
+    ["catalog", "related", slug, limit] as const,
+  search: (q: string, limit: number) => ["catalog", "search", q, limit] as const,
 };
 
 /** Public storefront category tree (active categories only, no auth). */
@@ -80,6 +90,30 @@ export function useAdminCategoryProducts(categoryId: string) {
     queryKey: catalogKeys.adminCategoryProducts(categoryId),
     queryFn: () => getAdminCategoryProducts(categoryId),
     enabled: Boolean(accessToken) && Boolean(categoryId),
+  });
+}
+
+/** "You may also like" — products related to the given slug (same category). */
+export function useRelatedProducts(slug: string | null, limit = 8) {
+  return useQuery({
+    queryKey: catalogKeys.related(slug ?? "", limit),
+    queryFn: () => getRelatedProducts(slug as string, limit),
+    enabled: Boolean(slug),
+    staleTime: 60_000,
+  });
+}
+
+/** Type-ahead storefront search. Only fires once `query` has 2+ characters;
+ *  previous results are kept on screen while the next request is in flight so
+ *  the dropdown doesn't flicker between keystrokes. Debounce upstream. */
+export function useSearchCatalog(query: string, limit = 5) {
+  const q = query.trim();
+  return useQuery({
+    queryKey: catalogKeys.search(q, limit),
+    queryFn: () => searchCatalog(q, limit),
+    enabled: q.length >= 2,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
 }
 

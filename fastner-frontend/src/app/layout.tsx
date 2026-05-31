@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, Oswald } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
@@ -91,6 +92,18 @@ export default function RootLayout({
       className={`${inter.variable} ${oswald.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-white text-ink-900">
+        {/* Pages are reached via full-page (<a>) navigation, so Back/Forward
+            shows the cached server-rendered HTML — which for client components
+            is their loading state — without React re-hydrating, leaving data
+            sections stuck on skeletons and the header logged-out until a manual
+            reload. This runs before hydration (independent of React) and forces
+            a fresh load on any back/forward navigation, both bfcache restores
+            (pageshow.persisted) and non-bfcache ones (the "back_forward"
+            navigation type). After reload the nav type is "reload", so it never
+            loops. */}
+        <Script id="bfcache-reload" strategy="beforeInteractive">
+          {`(function(){function bf(){try{var e=performance.getEntriesByType('navigation')[0];return e&&e.type==='back_forward';}catch(_){return false;}}if(bf()){window.location.reload();return;}window.addEventListener('pageshow',function(ev){if(ev.persisted||bf()){window.location.reload();}});})();`}
+        </Script>
         {/* Site-wide structured data */}
         <script
           type="application/ld+json"

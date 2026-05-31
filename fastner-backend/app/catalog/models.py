@@ -134,6 +134,9 @@ class Product(Base):
     filter_value_links: Mapped[list["ProductFilterValue"]] = relationship(
         back_populates="product", cascade="all, delete-orphan"
     )
+    industry_links: Mapped[list["ProductIndustry"]] = relationship(
+        back_populates="product", cascade="all, delete-orphan"
+    )
 
 
 class ProductCategory(Base):
@@ -258,3 +261,30 @@ class ProductFilterValue(Base):
 
     product: Mapped["Product"] = relationship(back_populates="filter_value_links")
     filter_value: Mapped["FilterValue"] = relationship(back_populates="product_links")
+
+
+class ProductIndustry(Base):
+    """Many-to-many link: a product serves one or more industries.
+
+    Industries are the same admin-managed rows shown in the "Industries We
+    Serve" section (``app.industries.models.Industry``). Tagging a product with
+    an industry surfaces it when that industry is searched (e.g. "aerospace").
+    """
+
+    __tablename__ = "product_industries"
+
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    industry_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("industries.id", ondelete="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+
+    product: Mapped["Product"] = relationship(back_populates="industry_links")
+    # Cross-module target resolved by class name from the shared registry.
+    industry: Mapped["Industry"] = relationship()  # type: ignore[name-defined]  # noqa: F821

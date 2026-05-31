@@ -131,6 +131,8 @@ class ProductCreate(BaseModel):
     category_ids: list[uuid.UUID] = []
     primary_category_id: uuid.UUID | None = None
     filter_value_ids: list[uuid.UUID] = []
+    # Industries this product serves (see app.industries). Searchable by name.
+    industry_ids: list[uuid.UUID] = []
 
 
 class ProductUpdate(BaseModel):
@@ -150,6 +152,8 @@ class ProductUpdate(BaseModel):
     category_ids: list[uuid.UUID] | None = None
     primary_category_id: uuid.UUID | None = None
     filter_value_ids: list[uuid.UUID] | None = None
+    # When provided, replaces the existing set of industry links.
+    industry_ids: list[uuid.UUID] | None = None
 
 
 class ProductCategoryRef(BaseModel):
@@ -168,6 +172,12 @@ class ProductFilterValueRef(BaseModel):
     group_name: str
 
 
+class ProductIndustryRef(BaseModel):
+    id: uuid.UUID
+    name: str
+    slug: str
+
+
 class ProductResponse(BaseModel):
     id: uuid.UUID
     name: str
@@ -184,6 +194,7 @@ class ProductResponse(BaseModel):
     position: int
     categories: list[ProductCategoryRef] = []
     filter_values: list[ProductFilterValueRef] = []
+    industries: list[ProductIndustryRef] = []
     created_at: datetime
     updated_at: datetime
 
@@ -220,3 +231,38 @@ class ProductSitemapItem(BaseModel):
 
     slug: str
     updated_at: datetime
+
+
+# --- search ------------------------------------------------------------------
+
+
+class ProductSearchItem(BaseModel):
+    """A product hit for the search dropdown — enough to render the list row and
+    the right-side detail preview (thumbnail, price, blurb)."""
+
+    id: uuid.UUID
+    name: str
+    slug: str
+    sku: str | None
+    image_url: str | None
+    short_description: str | None
+    description: str | None
+    price_b2c: float | None
+    price_b2b: float | None
+    industries: list[ProductIndustryRef] = []
+
+
+class CategorySearchItem(BaseModel):
+    """A category ("collection") hit for the search dropdown."""
+
+    id: uuid.UUID
+    name: str
+    slug: str
+    path: str
+    image_url: str | None
+
+
+class SearchResults(BaseModel):
+    query: str
+    products: list[ProductSearchItem] = []
+    categories: list[CategorySearchItem] = []

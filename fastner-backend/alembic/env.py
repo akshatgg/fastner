@@ -12,7 +12,10 @@ from app.core.database import Base
 import app.auth.models  # noqa: E402,F401
 import app.catalog.models  # noqa: E402,F401
 import app.cart.models  # noqa: E402,F401
+import app.address.models  # noqa: E402,F401
 import app.industries.models  # noqa: E402,F401
+import app.orders.models  # noqa: E402,F401
+import app.reviews.models  # noqa: E402,F401
 
 load_dotenv()
 

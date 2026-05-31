@@ -188,6 +188,16 @@ def list_public_products(db: Session = Depends(get_db)):
     return CatalogService(db).list_active_products()
 
 
+@public_router.get("/search", response_model=schemas.SearchResults)
+def search_catalog(
+    q: str = Query(default="", max_length=255),
+    limit: int = Query(default=5, ge=1, le=20),
+    db: Session = Depends(get_db),
+):
+    """Type-ahead storefront search over products and categories."""
+    return CatalogService(db).search(q, limit)
+
+
 @public_router.get("/categories/{category_id}", response_model=schemas.CategoryResponse)
 def public_category(category_id: uuid.UUID, db: Session = Depends(get_db)):
     svc = CatalogService(db)
@@ -209,6 +219,19 @@ def category_products(
     return CatalogService(db).list_products_in_category(
         category_id, filter_value_ids, page, page_size
     )
+
+
+@public_router.get(
+    "/products/{slug}/related", response_model=list[schemas.ProductSearchItem]
+)
+def related_products(
+    slug: str,
+    limit: int = Query(default=8, ge=1, le=24),
+    db: Session = Depends(get_db),
+):
+    """Products related to ``slug`` (same-category siblings) for the
+    "you may also like" section on the product page."""
+    return CatalogService(db).related_products(slug, limit)
 
 
 @public_router.get("/products/{slug}", response_model=schemas.ProductResponse)

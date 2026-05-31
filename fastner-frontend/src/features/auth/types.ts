@@ -39,3 +39,9 @@ export type SignInInput = {
   email: string;
   password: string;
 };
+
+/** Self-service profile edits (only the fields a user may change themselves). */
+export type ProfileUpdateInput = {
+  full_name?: string;
+  phone?: string | null;
+};

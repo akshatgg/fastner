@@ -88,6 +88,23 @@ def verification_token_expiry() -> datetime:
     )
 
 
+def generate_password_reset_token() -> str:
+    """Random opaque token embedded in a reset link (raw value emailed)."""
+    return secrets.token_urlsafe(48)
+
+
+def hash_password_reset_token(raw_token: str) -> str:
+    """SHA-256 hash used as the DB primary key for a password-reset token."""
+    return hashlib.sha256(raw_token.encode()).hexdigest()
+
+
+def password_reset_token_expiry() -> datetime:
+    """Absolute expiry timestamp for a newly issued password-reset token."""
+    return datetime.now(timezone.utc) + timedelta(
+        hours=settings.PASSWORD_RESET_EXPIRE_HOURS
+    )
+
+
 def send_verification_email(email: str, full_name: str, raw_token: str) -> None:
     """Email a verification link pointing at the frontend ``/verify-email`` page."""
     link = f"{settings.FRONTEND_BASE_URL}/verify-email?token={raw_token}"
@@ -117,5 +134,40 @@ def send_verification_email(email: str, full_name: str, raw_token: str) -> None:
         f"{link}\n\n"
         f"This link expires in {hours} hours. If you didn't create this account, "
         "you can ignore this email."
+    )
+    send_email(to=email, subject=subject, html_body=html_body, text_body=text_body)
+
+
+def send_password_reset_email(email: str, full_name: str, raw_token: str) -> None:
+    """Email a password-reset link pointing at the frontend ``/reset-password`` page."""
+    link = f"{settings.FRONTEND_BASE_URL}/reset-password?token={raw_token}"
+    hours = settings.PASSWORD_RESET_EXPIRE_HOURS
+    subject = "Reset your password — IBC Fasteners"
+    html_body = f"""\
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;color:#121212">
+  <h2 style="color:#f26a21;text-transform:uppercase;letter-spacing:.5px">Reset your password</h2>
+  <p>Hi {full_name},</p>
+  <p>We received a request to reset the password on your IBC Fasteners account.
+     Click the button below to choose a new one.</p>
+  <p style="margin:28px 0">
+    <a href="{link}"
+       style="background:#f26a21;color:#fff;text-decoration:none;padding:12px 24px;
+              border-radius:6px;font-weight:600;display:inline-block">
+      Reset password
+    </a>
+  </p>
+  <p style="color:#666;font-size:13px">Or paste this link into your browser:<br>
+    <a href="{link}" style="color:#f26a21">{link}</a></p>
+  <p style="color:#999;font-size:12px">This link expires in {hours} hours. If you
+     didn't request a reset, you can safely ignore this email — your password
+     won't change.</p>
+</div>"""
+    text_body = (
+        f"Hi {full_name},\n\n"
+        "We received a request to reset your IBC Fasteners password. "
+        "Choose a new one here:\n"
+        f"{link}\n\n"
+        f"This link expires in {hours} hours. If you didn't request a reset, you "
+        "can ignore this email — your password won't change."
     )
     send_email(to=email, subject=subject, html_body=html_body, text_body=text_body)
