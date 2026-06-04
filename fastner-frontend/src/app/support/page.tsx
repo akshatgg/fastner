@@ -4,10 +4,8 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { LifeBuoy, Plus, Send } from "lucide-react";
 
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import AccountLayout from "@/components/account/AccountLayout";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { useRequireAuth } from "@/features/auth/queries";
 import {
   useAddMyMessage,
   useCreateTicket,
@@ -34,28 +32,20 @@ function formatTime(value: string): string {
 }
 
 export default function SupportPage() {
-  const isAuthed = useRequireAuth();
-  if (!isAuthed) return null;
   return (
-    <>
-      <Header />
-      <main className="flex-1 bg-ink-50 py-12 sm:py-16">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            eyebrow="Help & support"
-            title="Support tickets"
-            description="Raise a ticket and our team will reply here and to your account email."
-            align="left"
-          />
-          <Suspense
-            fallback={<div className="mt-8 h-64 animate-pulse rounded-2xl bg-white" />}
-          >
-            <SupportInner />
-          </Suspense>
-        </div>
-      </main>
-      <Footer />
-    </>
+    <AccountLayout>
+      <SectionHeading
+        eyebrow="Help & support"
+        title="Support tickets"
+        description="Raise a ticket and our team will reply here and to your account email."
+        align="left"
+      />
+      <Suspense
+        fallback={<div className="mt-8 h-64 animate-pulse rounded-2xl bg-white" />}
+      >
+        <SupportInner />
+      </Suspense>
+    </AccountLayout>
   );
 }
 

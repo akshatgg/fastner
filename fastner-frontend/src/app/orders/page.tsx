@@ -1,12 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { CalendarClock, LifeBuoy, Package, ShoppingCart } from "lucide-react";
 
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import AccountLayout from "@/components/account/AccountLayout";
 import SectionHeading from "@/components/ui/SectionHeading";
-import { useRequireAuth } from "@/features/auth/queries";
+import Modal from "@/components/ui/Modal";
 import { useMyOrders } from "@/features/orders/queries";
 import {
   orderStatusBadge,
@@ -14,6 +14,7 @@ import {
   paymentStatusBadge,
 } from "@/features/orders/status";
 import type { Order } from "@/features/orders/types";
+import { useCreateTicket } from "@/features/support/queries";
 import { formatPrice } from "@/lib/format";
 
 function formatDate(value: string | null): string {
@@ -26,61 +27,50 @@ function formatDate(value: string | null): string {
 }
 
 export default function OrdersPage() {
-  const isAuthed = useRequireAuth();
   const { data: orders, isLoading } = useMyOrders();
-
-  if (!isAuthed) return null;
-
   const list = orders ?? [];
 
   return (
-    <>
-      <Header />
-      <main className="flex-1 bg-ink-50 py-12 sm:py-16">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            eyebrow="Your account"
-            title="My orders"
-            description="Track your orders, see delivery dates, and raise a support ticket if anything's off."
-            align="left"
-          />
+    <AccountLayout>
+      <SectionHeading
+        eyebrow="Your account"
+        title="My orders"
+        description="Track your orders, see delivery dates, and raise a support ticket if anything's off."
+        align="left"
+      />
 
-          <div className="mt-8 space-y-5">
-            {isLoading ? (
-              <>
-                <div className="h-44 animate-pulse rounded-2xl bg-white" />
-                <div className="h-44 animate-pulse rounded-2xl bg-white" />
-              </>
-            ) : list.length === 0 ? (
-              <div className="rounded-2xl border border-ink-100 bg-white p-12 text-center shadow-card">
-                <Package className="mx-auto h-10 w-10 text-ink-300" />
-                <p className="mt-4 text-lg font-semibold text-ink-900">
-                  No orders yet
-                </p>
-                <p className="mt-1 text-sm text-ink-500">
-                  When you place an order, it'll show up here.
-                </p>
-                <Link
-                  href="/#categories"
-                  className="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-600"
-                >
-                  <ShoppingCart className="h-4 w-4" /> Shop by category
-                </Link>
-              </div>
-            ) : (
-              list.map((order) => <OrderCard key={order.id} order={order} />)
-            )}
+      <div className="mt-8 space-y-5">
+        {isLoading ? (
+          <>
+            <div className="h-44 animate-pulse rounded-2xl bg-white" />
+            <div className="h-44 animate-pulse rounded-2xl bg-white" />
+          </>
+        ) : list.length === 0 ? (
+          <div className="rounded-2xl border border-ink-100 bg-white p-12 text-center shadow-card">
+            <Package className="mx-auto h-10 w-10 text-ink-300" />
+            <p className="mt-4 text-lg font-semibold text-ink-900">No orders yet</p>
+            <p className="mt-1 text-sm text-ink-500">
+              When you place an order, it'll show up here.
+            </p>
+            <Link
+              href="/#categories"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-600"
+            >
+              <ShoppingCart className="h-4 w-4" /> Shop by category
+            </Link>
           </div>
-        </div>
-      </main>
-      <Footer />
-    </>
+        ) : (
+          list.map((order) => <OrderCard key={order.id} order={order} />)
+        )}
+      </div>
+    </AccountLayout>
   );
 }
 
 function OrderCard({ order }: { order: Order }) {
   const status = orderStatusBadge(order.status);
   const payment = paymentStatusBadge(order.payment_status);
+  const [ticketOpen, setTicketOpen] = useState(false);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-ink-100 bg-white shadow-card">
@@ -90,9 +80,7 @@ function OrderCard({ order }: { order: Order }) {
           <p className="font-display text-base font-bold uppercase tracking-wide text-ink-900">
             {order.reference}
           </p>
-          <p className="text-xs text-ink-500">
-            Placed {formatDate(order.created_at)}
-          </p>
+          <p className="text-xs text-ink-500">Placed {formatDate(order.created_at)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span
@@ -188,16 +176,93 @@ function OrderCard({ order }: { order: Order }) {
           </div>
         </div>
 
-        {/* Actions */}
+        {/* Actions — raise a ticket for THIS order, inline */}
         <div className="mt-5 flex flex-wrap gap-3">
-          <Link
-            href={`/support?order=${order.id}&ref=${encodeURIComponent(order.reference)}`}
+          <button
+            onClick={() => setTicketOpen(true)}
             className="inline-flex items-center gap-2 rounded-lg border border-ink-200 px-4 py-2 text-sm font-semibold text-ink-700 transition hover:border-brand-400 hover:text-brand-600"
           >
             <LifeBuoy className="h-4 w-4" /> Raise a ticket
-          </Link>
+          </button>
         </div>
       </div>
+
+      <Modal
+        open={ticketOpen}
+        onClose={() => setTicketOpen(false)}
+        title={`Raise a ticket — ${order.reference}`}
+      >
+        <RaiseTicketForm order={order} onDone={() => setTicketOpen(false)} />
+      </Modal>
     </article>
+  );
+}
+
+function RaiseTicketForm({ order, onDone }: { order: Order; onDone: () => void }) {
+  const create = useCreateTicket();
+  const [subject, setSubject] = useState(`Order ${order.reference}`);
+  const [message, setMessage] = useState("");
+
+  const inputCls =
+    "w-full rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100";
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subject.trim() || !message.trim()) return;
+    await create.mutateAsync({
+      subject: subject.trim(),
+      message: message.trim(),
+      category: "order",
+      order_id: order.id,
+    });
+    onDone();
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <p className="inline-block rounded bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700">
+        Regarding order {order.reference}
+      </p>
+      <div>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
+          Subject
+        </label>
+        <input
+          className={inputCls}
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500">
+          How can we help?
+        </label>
+        <textarea
+          className={inputCls}
+          rows={5}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Describe the issue with this order…"
+          required
+        />
+      </div>
+      <div className="flex justify-end gap-3 pt-1">
+        <button
+          type="button"
+          onClick={onDone}
+          className="rounded-lg px-4 py-2 text-sm font-semibold text-ink-500 hover:text-ink-800"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={create.isPending || !subject.trim() || !message.trim()}
+          className="rounded-lg bg-brand-500 px-5 py-2 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-50"
+        >
+          {create.isPending ? "Submitting…" : "Submit ticket"}
+        </button>
+      </div>
+    </form>
   );
 }

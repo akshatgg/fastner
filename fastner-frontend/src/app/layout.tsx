@@ -71,10 +71,8 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/logo-dark.png",
-  },
+  // Icons are auto-detected from src/app/{favicon.ico,icon.png,apple-icon.png}
+  // (the IBC wrench-and-bolt mark) — no explicit config needed.
   manifest: "/manifest.webmanifest",
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }

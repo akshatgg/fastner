@@ -10,7 +10,6 @@ import {
   Search,
   ShoppingCart,
   User,
-  UserCircle,
   LayoutDashboard,
   LogOut,
   ChevronDown,
@@ -193,16 +192,16 @@ export default function Header() {
                           className="flex items-center gap-2.5 border-b border-ink-50 px-4 py-2.5 text-sm font-semibold text-brand-600 transition-colors hover:bg-brand-50"
                         >
                           <LayoutDashboard className="h-4 w-4" />
-                          Dashboard
+                          Admin dashboard
                         </a>
                       )}
                       <a
                         href="/account"
                         onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-ink-800 transition-colors hover:bg-ink-50 hover:text-brand-600"
                       >
-                        <UserCircle className="h-4 w-4" />
-                        Account
+                        <LayoutDashboard className="h-4 w-4" />
+                        Dashboard
                       </a>
                       <a
                         href="/orders"
@@ -291,7 +290,7 @@ export default function Header() {
                     className="flex items-center gap-2.5 py-3 text-lg font-semibold text-brand-600"
                   >
                     <LayoutDashboard className="h-5 w-5" />
-                    Dashboard
+                    Admin dashboard
                   </a>
                 )}
                 <a
@@ -299,8 +298,8 @@ export default function Header() {
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-2.5 py-3 text-lg font-semibold text-ink-800"
                 >
-                  <UserCircle className="h-5 w-5 text-ink-500" />
-                  Account
+                  <LayoutDashboard className="h-5 w-5 text-ink-500" />
+                  Dashboard
                 </a>
                 <a
                   href="/orders"
