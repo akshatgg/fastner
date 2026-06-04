@@ -8,18 +8,23 @@ The order amount is always computed server-side from the user's cart — the
 client never gets to name its own price.
 """
 
+from decimal import Decimal
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth.models import User
 from app.cart.service import CartService
 from app.core.database import get_db
+from app.coupons.service import CouponService
+from app.orders.service import compute_money
 from app.payments import schemas
 from app.payments.service import (
     RazorpayService,
     razorpay_enabled,
     razorpay_key_id,
 )
+from app.settings.service import SettingsService
 from app.utils.dependencies import get_current_user
 
 router = APIRouter(prefix="/payments", tags=["payments"])
@@ -35,18 +40,34 @@ def payment_config():
 
 @router.post("/razorpay/order", response_model=schemas.CreateOrderResponse)
 def create_razorpay_order(
-    user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    data: schemas.CreateOrderRequest | None = None,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
-    """Create a Razorpay order for the signed-in user's current cart total."""
+    """Create a Razorpay order for the signed-in user's cart total *including
+    GST and any coupon discount* — the same total the order is later persisted
+    with."""
     cart = CartService(db).get_cart(user.id)
     if cart.subtotal <= 0:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "Your cart has no payable total yet.",
         )
-    amount_paise = int(round(cart.subtotal * 100))
+    subtotal = Decimal(str(cart.subtotal))
+
+    # Apply the same coupon the order will be placed with so the charged amount
+    # matches the persisted order total exactly.
+    raw_discount = Decimal(0)
+    if data and data.coupon_code:
+        coupon = CouponService(db).validate_for_subtotal(data.coupon_code, subtotal)
+        raw_discount = CouponService.compute_discount(coupon, subtotal)
+
+    gst_rate = SettingsService(db).get_gst_rate()
+    _discount, _tax, total = compute_money(subtotal, raw_discount, gst_rate)
+    amount_paise = int((total * 100).to_integral_value())
+    # Razorpay caps receipt at 40 chars — the dashless hex (5 + 32 = 37) fits.
     order = RazorpayService().create_order(
-        amount_paise, receipt=f"cart-{user.id}"
+        amount_paise, receipt=f"cart-{user.id.hex}"
     )
     return schemas.CreateOrderResponse(
         order_id=order["id"],

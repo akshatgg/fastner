@@ -7,11 +7,18 @@ from app.payments.router import router as payments_router
 from app.auth.router import router as auth_router
 from app.cart.router import router as cart_router
 from app.catalog.router import admin_router as catalog_admin_router
+from app.coupons.router import admin_router as coupons_admin_router
+from app.coupons.router import router as coupons_router
 from app.catalog.router import public_router as catalog_public_router
 from app.industries.router import admin_router as industries_admin_router
 from app.industries.router import public_router as industries_public_router
+from app.orders.router import admin_router as orders_admin_router
 from app.orders.router import router as orders_router
 from app.reviews.router import router as reviews_router
+from app.settings.router import admin_router as settings_admin_router
+from app.settings.router import public_router as settings_public_router
+from app.support.router import admin_router as support_admin_router
+from app.support.router import router as support_router
 
 app = FastAPI(title="Fastner API", version="0.1.0")
 
@@ -27,13 +34,20 @@ app.include_router(auth_router)
 app.include_router(users_admin_router)
 app.include_router(cart_router)
 app.include_router(address_router)
+app.include_router(coupons_router)
+app.include_router(coupons_admin_router)
 app.include_router(payments_router)
 app.include_router(catalog_admin_router)
 app.include_router(catalog_public_router)
 app.include_router(industries_admin_router)
 app.include_router(industries_public_router)
 app.include_router(orders_router)
+app.include_router(orders_admin_router)
 app.include_router(reviews_router)
+app.include_router(settings_admin_router)
+app.include_router(settings_public_router)
+app.include_router(support_router)
+app.include_router(support_admin_router)
 
 
 @app.get("/")

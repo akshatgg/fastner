@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { CheckCircle2, MapPin, Plus, ShoppingCart, Star } from "lucide-react";
+import { CheckCircle2, MapPin, Plus, ShoppingCart, Star, Tag } from "lucide-react";
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -18,6 +18,9 @@ import { createRazorpayOrder } from "@/features/payments/api";
 import type { RazorpayCallbackResponse } from "@/features/payments/types";
 import { usePaymentConfig } from "@/features/payments/queries";
 import { usePlaceOrder } from "@/features/orders/queries";
+import { usePublicSettings } from "@/features/settings/queries";
+import { useValidateCoupon } from "@/features/coupons/queries";
+import type { CouponPreview } from "@/features/coupons/types";
 import { loadRazorpayScript, openRazorpayCheckout } from "@/lib/razorpay";
 import { ApiError } from "@/lib/api/client";
 import { formatPrice } from "@/lib/format";
@@ -29,6 +32,7 @@ export default function CheckoutPage() {
   const createAddress = useCreateAddress();
   const placeOrderMutation = usePlaceOrder();
   const { data: paymentConfig } = usePaymentConfig();
+  const { data: storeSettings } = usePublicSettings();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -37,9 +41,41 @@ export default function CheckoutPage() {
     null,
   );
 
+  // Applied coupon (validated server-side against the live cart).
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<CouponPreview | null>(null);
+  const validateCoupon = useValidateCoupon();
+
   const list = useMemo(() => addresses ?? [], [addresses]);
   const items = cart?.items ?? [];
   const mode = cart?.mode ?? "b2c";
+
+  // GST is applied on the product subtotal AFTER any coupon discount — the same
+  // total the backend charges and persists with the order. Rounded to paise.
+  const subtotal = cart?.subtotal ?? 0;
+  const gstRate = storeSettings?.gst_rate ?? 0;
+  const discount = Math.min(coupon?.discount_amount ?? 0, subtotal);
+  const taxable = subtotal - discount;
+  const taxAmount = Math.round(taxable * gstRate) / 100;
+  const total = taxable + taxAmount;
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+    try {
+      const preview = await validateCoupon.mutateAsync(code);
+      setCoupon(preview);
+      toast.success(`Coupon ${preview.code} applied.`);
+    } catch (e) {
+      setCoupon(null);
+      toast.error(e instanceof ApiError ? e.message : "Invalid coupon code.");
+    }
+  };
+
+  const removeCoupon = () => {
+    setCoupon(null);
+    setCouponInput("");
+  };
 
   // Pre-select the default address (or the first) once they load.
   useEffect(() => {
@@ -61,6 +97,7 @@ export default function CheckoutPage() {
     try {
       const order = await placeOrderMutation.mutateAsync({
         address_id: address.id,
+        coupon_code: coupon?.code ?? null,
         ...(payment ?? {}),
       });
       setPlaced({ ref: order.reference, address });
@@ -82,7 +119,7 @@ export default function CheckoutPage() {
       try {
         const loaded = await loadRazorpayScript();
         if (!loaded) throw new Error("Could not load the payment gateway.");
-        const order = await createRazorpayOrder();
+        const order = await createRazorpayOrder(coupon?.code ?? null);
         const opened = openRazorpayCheckout({
           order,
           customer: {
@@ -143,12 +180,20 @@ export default function CheckoutPage() {
               </p>
               <p className="mt-1 text-sm text-ink-500">Phone: {placed.address.phone}</p>
             </div>
-            <Link
-              href="/#categories"
-              className="mt-8 inline-block rounded-lg bg-brand-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-600"
-            >
-              Continue shopping
-            </Link>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href="/orders"
+                className="inline-block w-full rounded-lg bg-brand-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-600 sm:w-auto"
+              >
+                View my orders
+              </Link>
+              <Link
+                href="/#categories"
+                className="inline-block w-full rounded-lg border border-ink-200 px-6 py-3 text-sm font-bold text-ink-700 transition hover:border-brand-400 hover:text-brand-600 sm:w-auto"
+              >
+                Continue shopping
+              </Link>
+            </div>
           </div>
         </main>
         <Footer />
@@ -311,16 +356,77 @@ export default function CheckoutPage() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-4 flex items-baseline justify-between border-t border-ink-100 pt-4">
-                  <span className="text-sm font-semibold text-ink-900">
-                    Subtotal
-                    <span className="ml-1.5 rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-ink-500">
-                      {mode}
+
+                {/* Coupon */}
+                <div className="mt-4 border-t border-ink-100 pt-4">
+                  {coupon ? (
+                    <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2">
+                      <span className="flex items-center gap-2 text-sm font-semibold text-green-700">
+                        <Tag className="h-4 w-4" />
+                        {coupon.code} applied
+                      </span>
+                      <button
+                        onClick={removeCoupon}
+                        className="text-xs font-semibold text-ink-500 hover:text-red-600"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            applyCoupon();
+                          }
+                        }}
+                        placeholder="Coupon code"
+                        className="w-full rounded-lg border border-ink-200 px-3 py-2 text-sm uppercase outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                      />
+                      <button
+                        onClick={applyCoupon}
+                        disabled={validateCoupon.isPending || !couponInput.trim()}
+                        className="shrink-0 rounded-lg border border-brand-500 px-4 py-2 text-sm font-bold text-brand-600 transition hover:bg-brand-50 disabled:opacity-50"
+                      >
+                        {validateCoupon.isPending ? "…" : "Apply"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 space-y-2 border-t border-ink-100 pt-4 text-sm">
+                  <div className="flex items-baseline justify-between text-ink-600">
+                    <span>
+                      Subtotal
+                      <span className="ml-1.5 rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-ink-500">
+                        {mode}
+                      </span>
                     </span>
-                  </span>
-                  <span className="font-display text-xl font-bold text-ink-900">
-                    {formatPrice(cart?.subtotal ?? 0)}
-                  </span>
+                    <span className="font-medium text-ink-900">
+                      {formatPrice(subtotal)}
+                    </span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex items-baseline justify-between text-green-700">
+                      <span>Discount ({coupon?.code})</span>
+                      <span className="font-medium">−{formatPrice(discount)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline justify-between text-ink-600">
+                    <span>GST ({gstRate}%)</span>
+                    <span className="font-medium text-ink-900">
+                      {formatPrice(taxAmount)}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between border-t border-ink-100 pt-2">
+                    <span className="text-sm font-semibold text-ink-900">Total</span>
+                    <span className="font-display text-xl font-bold text-ink-900">
+                      {formatPrice(total)}
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={placeOrder}
@@ -330,7 +436,7 @@ export default function CheckoutPage() {
                   {paying
                     ? "Processing…"
                     : paymentConfig?.enabled
-                      ? "Pay & place order"
+                      ? `Pay ${formatPrice(total)} & place order`
                       : "Place order"}
                 </button>
                 {!selected && (
@@ -339,7 +445,7 @@ export default function CheckoutPage() {
                   </p>
                 )}
                 <p className="mt-3 text-center text-xs text-ink-400">
-                  Taxes and shipping are confirmed when we quote.
+                  Inclusive of {gstRate}% GST. Shipping is confirmed on approval.
                 </p>
                 <Link
                   href="/cart"

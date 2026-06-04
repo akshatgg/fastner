@@ -383,7 +383,8 @@ class CatalogService:
             specifications=data.specifications, images=data.images,
             price_b2c=data.price_b2c, price_b2b=data.price_b2b,
             b2b_min_qty=data.b2b_min_qty,
-            is_active=data.is_active, position=data.position,
+            is_active=data.is_active, is_out_of_stock=data.is_out_of_stock,
+            position=data.position,
         )
         self.db.add(product)
         self.db.flush()  # assign product.id before adding links
@@ -420,7 +421,7 @@ class CatalogService:
 
         for key in ("name", "short_description", "description", "specifications",
                     "images", "price_b2c", "price_b2b", "b2b_min_qty",
-                    "is_active", "position"):
+                    "is_active", "is_out_of_stock", "position"):
             if key in fields and fields[key] is not None:
                 setattr(product, key, fields[key])
 
@@ -538,6 +539,7 @@ class CatalogService:
             description=p.description,
             price_b2c=p.price_b2c,
             price_b2b=p.price_b2b,
+            is_out_of_stock=p.is_out_of_stock,
             industries=CatalogService._industry_refs(p),
         )
 
@@ -619,7 +621,8 @@ class CatalogService:
             specifications=product.specifications, images=product.images,
             price_b2c=product.price_b2c, price_b2b=product.price_b2b,
             b2b_min_qty=product.b2b_min_qty,
-            is_active=product.is_active, position=product.position,
+            is_active=product.is_active, is_out_of_stock=product.is_out_of_stock,
+            position=product.position,
             categories=cats, filter_values=fvs,
             industries=self._industry_refs(product),
             created_at=product.created_at, updated_at=product.updated_at,
@@ -650,6 +653,8 @@ class CatalogService:
         page: int,
         page_size: int,
         active_only: bool = True,
+        sort: str = "featured",
+        price_mode: str = "b2c",
     ) -> schemas.ProductListResponse:
         cat = self._get_category(category_id)
         subtree_ids = self._subtree_category_ids(cat)
@@ -682,8 +687,19 @@ class CatalogService:
             select(func.count()).select_from(base.subquery())
         ) or 0
 
+        # Storefront sort. "featured" keeps the curated position order; the price
+        # sorts use the column for the active buying mode (b2c/b2b), with NULL
+        # prices pushed to the end and position/name as the tiebreak.
+        price_col = Product.price_b2b if price_mode == "b2b" else Product.price_b2c
+        if sort == "price_asc":
+            ordering = (price_col.asc().nulls_last(), Product.position, Product.name)
+        elif sort == "price_desc":
+            ordering = (price_col.desc().nulls_last(), Product.position, Product.name)
+        else:
+            ordering = (Product.position, Product.name)
+
         items = self.db.scalars(
-            base.order_by(Product.position, Product.name)
+            base.order_by(*ordering)
             .offset((page - 1) * page_size)
             .limit(page_size)
         ).all()

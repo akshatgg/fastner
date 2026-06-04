@@ -11,15 +11,17 @@ import {
   ShoppingCart,
   User,
   UserCircle,
-  Settings,
   LayoutDashboard,
   LogOut,
   ChevronDown,
+  Package,
+  MapPin,
 } from "lucide-react";
 import { NAV_LINKS, SITE } from "@/lib/site-data";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useLogout } from "@/features/auth/queries";
 import { useCartCount } from "@/features/cart/queries";
+import { useAddresses } from "@/features/address/queries";
 import SearchOverlay from "@/components/layout/SearchOverlay";
 
 export default function Header() {
@@ -96,16 +98,19 @@ export default function Header() {
         ].join(" ")}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <a href="/" className="flex shrink-0 items-center">
-            <Image
-              src="/logo-dark.png"
-              alt={`${SITE.name} — ${SITE.tagline}`}
-              width={437}
-              height={122}
-              priority
-              className="h-12 w-auto sm:h-14"
-            />
-          </a>
+          <div className="flex items-center gap-3">
+            <a href="/" className="flex shrink-0 items-center">
+              <Image
+                src="/logo-dark.png"
+                alt={`${SITE.name} — ${SITE.tagline}`}
+                width={437}
+                height={122}
+                priority
+                className="h-12 w-auto sm:h-14"
+              />
+            </a>
+            {mounted && isAuthed && <DeliveryLocation />}
+          </div>
 
           <nav className="hidden items-center gap-8 lg:flex">
             {NAV_LINKS.map((link) => (
@@ -200,12 +205,12 @@ export default function Header() {
                         Account
                       </a>
                       <a
-                        href="/settings"
+                        href="/orders"
                         onClick={() => setProfileOpen(false)}
                         className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
                       >
-                        <Settings className="h-4 w-4" />
-                        Settings
+                        <Package className="h-4 w-4" />
+                        My orders
                       </a>
                       <button
                         type="button"
@@ -298,12 +303,12 @@ export default function Header() {
                   Account
                 </a>
                 <a
-                  href="/settings"
+                  href="/orders"
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-2.5 py-3 text-lg font-semibold text-ink-800"
                 >
-                  <Settings className="h-5 w-5 text-ink-500" />
-                  Settings
+                  <Package className="h-5 w-5 text-ink-500" />
+                  My orders
                 </a>
                 <button
                   type="button"
@@ -352,5 +357,30 @@ export default function Header() {
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
+  );
+}
+
+/** Amazon-style "Deliver to {city} {pincode}" pulled from the user's default
+ *  saved address. Links to the account page to add/change it. */
+function DeliveryLocation() {
+  const { data: addresses } = useAddresses();
+  const def = addresses?.find((a) => a.is_default) ?? addresses?.[0];
+
+  return (
+    <a
+      href="/account"
+      className="hidden items-center gap-1.5 rounded-md px-2 py-1 text-left transition-colors hover:bg-ink-50 md:flex"
+      title="Change delivery location"
+    >
+      <MapPin className="h-5 w-5 shrink-0 text-brand-500" />
+      <span className="flex min-w-0 flex-col leading-tight">
+        <span className="text-[11px] text-ink-400">
+          {def ? "Deliver to" : "Delivery"}
+        </span>
+        <span className="truncate text-sm font-semibold text-ink-800">
+          {def ? `${def.city} ${def.pincode}` : "Add an address"}
+        </span>
+      </span>
+    </a>
   );
 }

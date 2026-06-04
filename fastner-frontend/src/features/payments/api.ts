@@ -11,9 +11,13 @@ import type {
 export const getPaymentConfig = () =>
   apiFetch<PaymentConfig>("/payments/config", { auth: false });
 
-/** Create a Razorpay order for the signed-in user's current cart total. */
-export const createRazorpayOrder = () =>
-  apiFetch<RazorpayOrder>("/payments/razorpay/order", { method: "POST" });
+/** Create a Razorpay order for the signed-in user's current cart total
+ *  (including GST and any applied coupon discount). */
+export const createRazorpayOrder = (couponCode?: string | null) =>
+  apiFetch<RazorpayOrder>("/payments/razorpay/order", {
+    method: "POST",
+    body: { coupon_code: couponCode ?? null },
+  });
 
 /** Verify the Checkout callback signature after a successful payment. */
 export const verifyRazorpayPayment = (input: RazorpayCallbackResponse) =>

@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderTree, SlidersHorizontal, Factory, Users, ArrowLeft } from "lucide-react";
+import {
+  FolderTree,
+  SlidersHorizontal,
+  Factory,
+  Users,
+  ArrowLeft,
+  ClipboardList,
+  LifeBuoy,
+  Settings,
+  Ticket,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { useRequireAdmin } from "@/features/catalog/queries";
@@ -10,9 +20,13 @@ import { useCurrentUser } from "@/features/auth/queries";
 
 const NAV = [
   { href: "/admin/categories", label: "Categories & Products", Icon: FolderTree },
+  { href: "/admin/orders", label: "Orders", Icon: ClipboardList },
+  { href: "/admin/coupons", label: "Coupons", Icon: Ticket },
+  { href: "/admin/tickets", label: "Support", Icon: LifeBuoy },
   { href: "/admin/filters", label: "Filters", Icon: SlidersHorizontal },
   { href: "/admin/industries", label: "Industries", Icon: Factory },
   { href: "/admin/users", label: "Users", Icon: Users },
+  { href: "/admin/settings", label: "Settings", Icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -30,7 +44,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <p className="font-display text-lg font-bold uppercase tracking-wide text-ink-900">
             Admin
           </p>
-          <p className="text-xs text-ink-400">Catalog dashboard</p>
+          <p className="text-xs text-ink-400">Store dashboard</p>
         </div>
         <nav className="mt-8 flex flex-col gap-1">
           {NAV.map(({ href, label, Icon }) => {

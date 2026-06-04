@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.auth import helpers
@@ -24,6 +24,7 @@ from app.auth.schemas import (
     TokenResponse,
 )
 from app.core.config import settings
+from app.orders.models import ACTIVE_STATUSES, Order
 from app.utils.token_processor import decrypt_token, encrypt_token
 
 logger = logging.getLogger(__name__)
@@ -259,6 +260,71 @@ class AuthService:
         self.db.delete(record)  # single-use
         # Revoke all sessions: old credentials must not stay valid after a reset.
         self.db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
+        self.db.commit()
+
+    # --- self-service password & account -------------------------------------
+
+    def change_password(
+        self, user: User, current_password: str, new_password: str
+    ) -> TokenResponse:
+        """Change the signed-in user's password after confirming the current one.
+
+        Every existing refresh token is revoked, then a fresh pair is issued and
+        returned — so the device making the change stays signed in while all
+        other sessions are logged out."""
+        if user.hashed_password is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This account signs in with Google and has no password to change.",
+            )
+        if not helpers.verify_password(current_password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your current password is incorrect.",
+            )
+        if helpers.verify_password(new_password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your new password must be different from your current one.",
+            )
+
+        user.hashed_password = helpers.hash_password(new_password)
+        # Drop every session, then mint a fresh pair (committed by the helper).
+        self.db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
+        return self._issue_token_pair(user)
+
+    def delete_account(self, user: User, password: str | None) -> None:
+        """Permanently delete the signed-in user's account.
+
+        Guarded two ways: password accounts must re-enter their password, and an
+        account can't be deleted while it still has an order in flight. The
+        delete cascades to the user's orders, addresses, cart, reviews and
+        tokens (see the FK ``ondelete`` rules)."""
+        # Confirm identity for password accounts; Google-only accounts skip this.
+        if user.hashed_password is not None and (
+            not password or not helpers.verify_password(password, user.hashed_password)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your password is incorrect.",
+            )
+
+        open_orders = self.db.scalar(
+            select(func.count())
+            .select_from(Order)
+            .where(Order.user_id == user.id)
+            .where(Order.status.in_(ACTIVE_STATUSES))
+        )
+        if open_orders:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"You have {open_orders} order(s) still in progress. Please wait "
+                    "until they're delivered or cancelled before deleting your account."
+                ),
+            )
+
+        self.db.delete(user)
         self.db.commit()
 
     # --- refresh-token flow --------------------------------------------------

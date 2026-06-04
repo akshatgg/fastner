@@ -125,6 +125,7 @@ class ProductCreate(BaseModel):
     price_b2b: float | None = Field(default=None, ge=0)
     b2b_min_qty: int = Field(default=1, ge=1, le=9999)
     is_active: bool = True
+    is_out_of_stock: bool = False
     position: int = 0
     # Must reference leaf categories. The first (or primary_category_id, if given)
     # becomes the canonical category.
@@ -147,6 +148,7 @@ class ProductUpdate(BaseModel):
     price_b2b: float | None = Field(default=None, ge=0)
     b2b_min_qty: int | None = Field(default=None, ge=1, le=9999)
     is_active: bool | None = None
+    is_out_of_stock: bool | None = None
     position: int | None = None
     # When provided, replaces the existing set of links.
     category_ids: list[uuid.UUID] | None = None
@@ -191,6 +193,7 @@ class ProductResponse(BaseModel):
     price_b2b: float | None
     b2b_min_qty: int
     is_active: bool
+    is_out_of_stock: bool = False
     position: int
     categories: list[ProductCategoryRef] = []
     filter_values: list[ProductFilterValueRef] = []
@@ -249,6 +252,7 @@ class ProductSearchItem(BaseModel):
     description: str | None
     price_b2c: float | None
     price_b2b: float | None
+    is_out_of_stock: bool = False
     industries: list[ProductIndustryRef] = []
 
 

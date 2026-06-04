@@ -48,6 +48,13 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
 
+    @property
+    def has_password(self) -> bool:
+        """True for password accounts; False for Google-only sign-ins, which
+        have no local password to change. Surfaced in the API so the UI knows
+        whether to offer the change-password form."""
+        return self.hashed_password is not None
+
 
 class RefreshToken(Base):
     """A DB-backed, revocable refresh token.

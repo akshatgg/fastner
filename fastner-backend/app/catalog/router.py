@@ -212,12 +212,16 @@ def category_products(
     filter_value_ids: list[uuid.UUID] = Query(default=[]),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=24, ge=1, le=100),
+    sort: str = Query(default="featured", pattern="^(featured|price_asc|price_desc)$"),
+    price_mode: str = Query(default="b2c", pattern="^(b2c|b2b)$"),
     db: Session = Depends(get_db),
 ):
     """Products under a category (rolled up across all descendant leaves),
-    with the available filter facets. Optionally filtered by ``filter_value_ids``."""
+    with the available filter facets. Optionally filtered by ``filter_value_ids``
+    and sorted by ``sort`` (price sorts use the ``price_mode`` column)."""
     return CatalogService(db).list_products_in_category(
-        category_id, filter_value_ids, page, page_size
+        category_id, filter_value_ids, page, page_size,
+        sort=sort, price_mode=price_mode,
     )
 
 

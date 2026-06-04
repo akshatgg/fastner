@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronRight, Minus, Plus, ShoppingCart } from "lucide-react";
+import {
+  ChevronRight,
+  Minus,
+  Plus,
+  ShoppingCart,
+  ArrowUpDown,
+  ChevronDown,
+} from "lucide-react";
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -19,7 +26,7 @@ import {
   useUpdateCartItem,
 } from "@/features/cart/queries";
 import { findWithTrail } from "@/features/catalog/tree";
-import type { CategoryTreeNode, Product } from "@/features/catalog/types";
+import type { CategoryTreeNode, Product, ProductSort } from "@/features/catalog/types";
 import { formatPrice } from "@/lib/format";
 import { useModeStore } from "@/lib/store/mode-store";
 
@@ -126,7 +133,11 @@ function SubcategoryGrid({ node }: { node: CategoryTreeNode }) {
 
 function LeafProducts({ category }: { category: CategoryTreeNode }) {
   const [selected, setSelected] = useState<string[]>([]);
-  const { data, isLoading } = useCategoryProducts(category.id, selected, 1);
+  const [sort, setSort] = useState<ProductSort>("featured");
+  // Price sorts follow the active buying mode so the order matches the prices
+  // shown on the cards (B2C retail vs B2B bulk).
+  const mode = useModeStore((s) => s.mode);
+  const { data, isLoading } = useCategoryProducts(category.id, selected, 1, sort, mode);
 
   const toggle = (id: string) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -186,6 +197,8 @@ function LeafProducts({ category }: { category: CategoryTreeNode }) {
           items={data?.items ?? []}
           total={data?.total ?? 0}
           hasFilters={selected.length > 0}
+          sort={sort}
+          onSortChange={setSort}
         />
       </div>
     </div>
@@ -197,14 +210,26 @@ function ProductGrid({
   items,
   total,
   hasFilters,
+  sort,
+  onSortChange,
 }: {
   isLoading: boolean;
   items: Product[];
   total: number;
   hasFilters: boolean;
+  sort: ProductSort;
+  onSortChange: (s: ProductSort) => void;
 }) {
   return (
     <div className="flex-1">
+      {/* Toolbar: result count + sort. Kept mounted while products exist so the
+          control stays put during a re-sort (results are held via keepPreviousData). */}
+      {!isLoading && items.length > 0 && (
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <p className="text-sm text-ink-500">{total} products</p>
+          <SortSelect value={sort} onChange={onSortChange} />
+        </div>
+      )}
       {isLoading ? (
         <p className="py-20 text-center text-sm text-ink-400">Loading…</p>
       ) : items.length === 0 ? (
@@ -212,15 +237,47 @@ function ProductGrid({
           No products {hasFilters ? "match these filters" : "in this category yet"}.
         </p>
       ) : (
-        <>
-          <p className="mb-4 text-sm text-ink-500">{total} products</p>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {items.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          {items.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
       )}
+    </div>
+  );
+}
+
+const SORT_OPTIONS: { value: ProductSort; label: string }[] = [
+  { value: "featured", label: "Featured" },
+  { value: "price_asc", label: "Price: Low to High" },
+  { value: "price_desc", label: "Price: High to Low" },
+];
+
+/** "Sort by" control shown beside the filters. A styled native <select> so it
+ *  stays keyboard- and mobile-friendly. */
+function SortSelect({
+  value,
+  onChange,
+}: {
+  value: ProductSort;
+  onChange: (s: ProductSort) => void;
+}) {
+  return (
+    <div className="relative shrink-0">
+      <ArrowUpDown className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+      <select
+        aria-label="Sort products"
+        value={value}
+        onChange={(e) => onChange(e.target.value as ProductSort)}
+        className="appearance-none rounded-lg border border-ink-200 bg-white py-2 pl-8 pr-9 text-sm font-medium text-ink-800 shadow-card outline-none transition hover:border-ink-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+      >
+        {SORT_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
     </div>
   );
 }
@@ -248,18 +305,25 @@ function ProductCard({ product }: { product: Product }) {
   return (
     <div className="group flex flex-col rounded-xl border border-ink-100 bg-white p-3 shadow-card transition-all duration-200 hover:-translate-y-1 hover:border-brand-200 hover:shadow-lift">
       <Link href={`/product/${product.slug}`} className="flex flex-col">
-        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-ink-50">
+        <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-ink-50">
           {product.images[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={product.images[0]}
               alt={product.name}
-              className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+              className={`h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105 ${
+                product.is_out_of_stock ? "opacity-50" : ""
+              }`}
               loading="lazy"
             />
           ) : (
             <span className="font-display text-3xl font-bold text-ink-200">
               {product.name.trim().charAt(0).toUpperCase()}
+            </span>
+          )}
+          {product.is_out_of_stock && (
+            <span className="absolute left-2 top-2 rounded bg-ink-900/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+              Out of stock
             </span>
           )}
         </div>
@@ -278,7 +342,11 @@ function ProductCard({ product }: { product: Product }) {
         </p>
       )}
 
-      {inCart > 0 ? (
+      {product.is_out_of_stock ? (
+        <span className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-ink-200 bg-ink-50 px-3 py-2 text-xs font-bold text-ink-400">
+          Out of stock
+        </span>
+      ) : inCart > 0 ? (
         <div className="mt-3 flex items-center justify-between rounded-lg border border-brand-200 bg-brand-50">
           <button
             type="button"

@@ -9,6 +9,12 @@ class PaymentConfigResponse(BaseModel):
     key_id: str | None = None
 
 
+class CreateOrderRequest(BaseModel):
+    """Optional coupon to apply when computing the amount to charge."""
+
+    coupon_code: str | None = None
+
+
 class CreateOrderResponse(BaseModel):
     """A freshly created Razorpay order, ready to hand to Checkout.js."""
 

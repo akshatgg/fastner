@@ -84,6 +84,7 @@ export type Product = {
   price_b2b: number | null;
   b2b_min_qty: number;
   is_active: boolean;
+  is_out_of_stock: boolean;
   position: number;
   categories: ProductCategoryRef[];
   filter_values: ProductFilterValueRef[];
@@ -104,6 +105,7 @@ export type ProductCreateInput = {
   price_b2b?: number | null;
   b2b_min_qty?: number;
   is_active?: boolean;
+  is_out_of_stock?: boolean;
   position?: number;
   category_ids?: string[];
   primary_category_id?: string | null;
@@ -130,6 +132,10 @@ export type ProductListResponse = {
   facets: Facet[];
 };
 
+/** Storefront sort options for a category product listing. Price sorts use the
+ *  column for the active buying mode (resolved server-side via `price_mode`). */
+export type ProductSort = "featured" | "price_asc" | "price_desc";
+
 // --- search ---
 
 export type ProductSearchItem = {
@@ -142,6 +148,7 @@ export type ProductSearchItem = {
   description: string | null;
   price_b2c: number | null;
   price_b2b: number | null;
+  is_out_of_stock?: boolean;
   industries: ProductIndustryRef[];
 };
 

@@ -9,6 +9,8 @@ import { ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/auth-store";
 
 import {
+  changePasswordRequest,
+  deleteAccountRequest,
   forgotPasswordRequest,
   listUsers,
   loginRequest,
@@ -22,6 +24,8 @@ import {
   verifyEmailRequest,
 } from "./api";
 import type {
+  ChangePasswordInput,
+  DeleteAccountInput,
   ProfileUpdateInput,
   SignInInput,
   SignUpInput,
@@ -211,6 +215,42 @@ export function useUpdateProfile() {
     },
     onError: (error) =>
       toast.error(errorMessage(error, "Could not update your profile.")),
+  });
+}
+
+/** Change the signed-in user's password. The server rotates the session, so we
+ *  swap in the fresh token pair to keep this device signed in. */
+export function useChangePassword() {
+  const setTokens = useAuthStore((s) => s.setTokens);
+
+  return useMutation({
+    mutationFn: (input: ChangePasswordInput) => changePasswordRequest(input),
+    onSuccess: (tokens) => {
+      setTokens(tokens.access_token, tokens.refresh_token);
+      toast.success("Password updated. Any other devices have been signed out.");
+    },
+    onError: (error) =>
+      toast.error(errorMessage(error, "Could not update your password.")),
+  });
+}
+
+/** Permanently delete the signed-in account, then clear the session and route
+ *  home. Backend blocks deletion while orders are still in progress. */
+export function useDeleteAccount() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const clear = useAuthStore((s) => s.clear);
+
+  return useMutation({
+    mutationFn: (input: DeleteAccountInput) => deleteAccountRequest(input),
+    onSuccess: () => {
+      clear();
+      queryClient.clear();
+      toast.success("Your account has been deleted.");
+      router.push("/");
+    },
+    onError: (error) =>
+      toast.error(errorMessage(error, "Could not delete your account.")),
   });
 }
 

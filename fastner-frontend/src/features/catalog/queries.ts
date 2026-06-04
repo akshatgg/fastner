@@ -39,6 +39,7 @@ import type {
   CategoryCreateInput,
   CategoryUpdateInput,
   ProductCreateInput,
+  ProductSort,
   ProductUpdateInput,
 } from "./types";
 
@@ -51,8 +52,14 @@ export const catalogKeys = {
   publicTree: ["catalog", "public-tree"] as const,
   filterGroups: ["catalog", "filter-groups"] as const,
   product: (id: string) => ["catalog", "product", id] as const,
-  categoryProducts: (id: string, filters: string[], page: number) =>
-    ["catalog", "category-products", id, filters, page] as const,
+  categoryProducts: (
+    id: string,
+    filters: string[],
+    page: number,
+    sort: string,
+    priceMode: string,
+  ) =>
+    ["catalog", "category-products", id, filters, page, sort, priceMode] as const,
   adminCategoryProducts: (id: string) =>
     ["catalog", "admin-category-products", id] as const,
   publicProduct: (slug: string) => ["catalog", "public-product", slug] as const,
@@ -69,17 +76,35 @@ export function usePublicCategoryTree() {
   });
 }
 
-/** Rolled-up products under a category, plus filter facets. */
+/** Rolled-up products under a category, plus filter facets. `sort` controls the
+ *  order; price sorts use the active buying mode's price column (`priceMode`).
+ *  Previous results are kept while a re-sort/refilter is in flight to avoid a
+ *  flash of the empty/loading state. */
 export function useCategoryProducts(
   categoryId: string | null,
   filterValueIds: string[],
   page: number,
+  sort: ProductSort = "featured",
+  priceMode: "b2c" | "b2b" = "b2c",
 ) {
   return useQuery({
-    queryKey: catalogKeys.categoryProducts(categoryId ?? "", filterValueIds, page),
+    queryKey: catalogKeys.categoryProducts(
+      categoryId ?? "",
+      filterValueIds,
+      page,
+      sort,
+      priceMode,
+    ),
     queryFn: () =>
-      getCategoryProducts(categoryId as string, { filterValueIds, page, pageSize: 24 }),
+      getCategoryProducts(categoryId as string, {
+        filterValueIds,
+        page,
+        pageSize: 24,
+        sort,
+        priceMode,
+      }),
     enabled: Boolean(categoryId),
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -204,13 +204,20 @@ export default function ProductView({ slug }: { slug: string }) {
                     )}
                   </div>
 
+                  {product.is_out_of_stock && (
+                    <p className="mt-4 inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700">
+                      Out of stock — currently unavailable. Check back soon or
+                      enquire below.
+                    </p>
+                  )}
+
                   <div className="mt-4 flex flex-wrap items-center gap-3">
                     <div className="flex items-center rounded-lg border border-ink-200">
                       <button
                         type="button"
                         onClick={() => setQty((q) => Math.max(minQty, q - 1))}
                         className="p-2.5 text-ink-500 transition hover:text-brand-600 disabled:opacity-40"
-                        disabled={qty <= minQty}
+                        disabled={qty <= minQty || product.is_out_of_stock}
                         aria-label="Decrease quantity"
                       >
                         <Minus className="h-4 w-4" />
@@ -221,7 +228,8 @@ export default function ProductView({ slug }: { slug: string }) {
                       <button
                         type="button"
                         onClick={() => setQty((q) => q + 1)}
-                        className="p-2.5 text-ink-500 transition hover:text-brand-600"
+                        className="p-2.5 text-ink-500 transition hover:text-brand-600 disabled:opacity-40"
+                        disabled={product.is_out_of_stock}
                         aria-label="Increase quantity"
                       >
                         <Plus className="h-4 w-4" />
@@ -232,11 +240,15 @@ export default function ProductView({ slug }: { slug: string }) {
                       onClick={() =>
                         addToCart.mutate({ product_id: product.id, quantity: qty })
                       }
-                      disabled={addToCart.isPending}
+                      disabled={addToCart.isPending || product.is_out_of_stock}
                       className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-50"
                     >
                       <ShoppingCart className="h-4 w-4" />
-                      {addToCart.isPending ? "Adding…" : "Add to cart"}
+                      {product.is_out_of_stock
+                        ? "Out of stock"
+                        : addToCart.isPending
+                          ? "Adding…"
+                          : "Add to cart"}
                     </button>
                   </div>
 

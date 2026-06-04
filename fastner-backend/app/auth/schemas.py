@@ -46,6 +46,21 @@ class ResetPasswordRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class ChangePasswordRequest(BaseModel):
+    """Change the signed-in user's password — requires the current password to
+    confirm identity."""
+
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class DeleteAccountRequest(BaseModel):
+    """Confirm account deletion. The password is required for password accounts
+    (verified server-side); Google-only accounts have none to confirm."""
+
+    password: str | None = None
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
@@ -80,6 +95,8 @@ class UserResponse(BaseModel):
     role: str
     phone: str | None
     is_verified: bool
+    # False for Google-only accounts (no local password to change).
+    has_password: bool
     created_at: datetime
 
 

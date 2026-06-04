@@ -12,6 +12,7 @@ import type {
   ProductCreateInput,
   ProductListResponse,
   ProductSearchItem,
+  ProductSort,
   ProductUpdateInput,
   SearchResults,
 } from "./types";
@@ -23,12 +24,20 @@ export const getPublicCategoryTree = () =>
 
 export const getCategoryProducts = (
   categoryId: string,
-  opts: { filterValueIds?: string[]; page?: number; pageSize?: number } = {},
+  opts: {
+    filterValueIds?: string[];
+    page?: number;
+    pageSize?: number;
+    sort?: ProductSort;
+    priceMode?: "b2c" | "b2b";
+  } = {},
 ) => {
   const qs = new URLSearchParams();
   for (const id of opts.filterValueIds ?? []) qs.append("filter_value_ids", id);
   if (opts.page) qs.set("page", String(opts.page));
   if (opts.pageSize) qs.set("page_size", String(opts.pageSize));
+  if (opts.sort) qs.set("sort", opts.sort);
+  if (opts.priceMode) qs.set("price_mode", opts.priceMode);
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
   return apiFetch<ProductListResponse>(
     `/catalog/categories/${categoryId}/products${suffix}`,

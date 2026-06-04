@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.auth.models import User
 from app.auth.schemas import (
+    ChangePasswordRequest,
+    DeleteAccountRequest,
     ForgotPasswordRequest,
     MessageResponse,
     ProfileUpdate,
@@ -100,6 +102,26 @@ def update_me(
     db: Session = Depends(get_db),
 ) -> User:
     return AuthService(db).update_profile(current_user, data)
+
+
+@router.post("/change-password", response_model=TokenResponse)
+def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    return AuthService(db).change_password(
+        current_user, data.current_password, data.new_password
+    )
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_me(
+    data: DeleteAccountRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    AuthService(db).delete_account(current_user, data.password)
 
 
 # ============================ ADMIN: users ============================

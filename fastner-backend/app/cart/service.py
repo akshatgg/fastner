@@ -43,6 +43,10 @@ class CartService:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST, "This product is no longer available."
             )
+        if product.is_out_of_stock:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, "This product is currently out of stock."
+            )
         return product
 
     @staticmethod

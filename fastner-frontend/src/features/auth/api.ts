@@ -3,6 +3,8 @@
 import { apiFetch } from "@/lib/api/client";
 
 import type {
+  ChangePasswordInput,
+  DeleteAccountInput,
   MessageResponse,
   ProfileUpdateInput,
   SignInInput,
@@ -58,6 +60,18 @@ export const meRequest = () => apiFetch<User>("/auth/me");
 
 export const updateProfileRequest = (input: ProfileUpdateInput) =>
   apiFetch<User>("/auth/me", { method: "PATCH", body: input });
+
+/** Change password while signed in. Returns a fresh token pair (the server
+ *  revokes all other sessions and re-issues one for this device). */
+export const changePasswordRequest = (input: ChangePasswordInput) =>
+  apiFetch<TokenResponse>("/auth/change-password", {
+    method: "POST",
+    body: input,
+  });
+
+/** Permanently delete the signed-in user's account. */
+export const deleteAccountRequest = (input: DeleteAccountInput) =>
+  apiFetch<void>("/auth/me", { method: "DELETE", body: input });
 
 export const logoutRequest = (refreshToken: string) =>
   apiFetch<void>("/auth/logout", {

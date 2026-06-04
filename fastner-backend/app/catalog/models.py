@@ -115,6 +115,12 @@ class Product(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default=text("true")
     )
+    # Admin "out of quantity" flag. Distinct from ``is_active`` (which hides the
+    # product entirely): an out-of-stock product still shows in the catalog but
+    # can't be added to the cart.
+    is_out_of_stock: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     position: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default=text("0")
     )

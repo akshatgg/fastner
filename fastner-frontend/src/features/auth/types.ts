@@ -7,6 +7,8 @@ export type User = {
   role: string;
   phone: string | null;
   is_verified: boolean;
+  /** False for Google-only accounts (no local password to change). */
+  has_password: boolean;
   created_at: string;
 };
 
@@ -44,4 +46,15 @@ export type SignInInput = {
 export type ProfileUpdateInput = {
   full_name?: string;
   phone?: string | null;
+};
+
+/** Change the signed-in user's password (current password confirms identity). */
+export type ChangePasswordInput = {
+  current_password: string;
+  new_password: string;
+};
+
+/** Confirm account deletion. Password is required for password accounts. */
+export type DeleteAccountInput = {
+  password?: string;
 };

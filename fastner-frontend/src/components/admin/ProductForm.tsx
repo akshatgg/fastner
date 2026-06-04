@@ -46,6 +46,9 @@ export default function ProductForm({
     product?.price_b2b != null ? String(product.price_b2b) : "",
   );
   const [b2bMinQty, setB2bMinQty] = useState(String(product?.b2b_min_qty ?? 1));
+  const [isOutOfStock, setIsOutOfStock] = useState(
+    product?.is_out_of_stock ?? false,
+  );
   const [images, setImages] = useState<string[]>(product?.images ?? [""]);
   const [specs, setSpecs] = useState<SpecRow[]>(
     product
@@ -106,6 +109,7 @@ export default function ProductForm({
       price_b2c: parsePrice(priceB2c),
       price_b2b: parsePrice(priceB2b),
       b2b_min_qty: minQty,
+      is_out_of_stock: isOutOfStock,
       category_ids: categoryIds,
       primary_category_id: primary,
       filter_value_ids: filterValueIds,
@@ -183,6 +187,20 @@ export default function ProductForm({
           />
         </div>
       </div>
+
+      {/* Stock — keep the product visible but block checkout when unavailable */}
+      <label className="flex items-center gap-3 rounded-lg border border-ink-200 px-3 py-2.5 text-sm">
+        <input
+          type="checkbox"
+          checked={isOutOfStock}
+          onChange={(e) => setIsOutOfStock(e.target.checked)}
+          className="h-4 w-4 rounded border-ink-300 text-brand-500 focus:ring-brand-500"
+        />
+        <span className="font-semibold text-ink-800">Mark out of stock</span>
+        <span className="text-ink-400">
+          — still listed, but customers can&apos;t add it to the cart.
+        </span>
+      </label>
 
       {/* Specifications (JSONB) */}
       <div>

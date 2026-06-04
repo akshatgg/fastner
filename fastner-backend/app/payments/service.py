@@ -99,6 +99,44 @@ class RazorpayService:
                 f"Could not reach Razorpay: {exc.reason}",
             )
 
+    def refund_payment(
+        self, payment_id: str, amount_paise: int | None = None
+    ) -> dict:
+        """Refund a captured payment (full refund by default, or ``amount_paise``
+        for a partial one). Returns the raw Razorpay refund dict (``id``,
+        ``status``, ...). Raises an HTTPException on a gateway error so callers
+        can decide whether to proceed."""
+        self._require_config()
+        payload = json.dumps(
+            {"amount": amount_paise} if amount_paise else {}
+        ).encode()
+        creds = base64.b64encode(
+            f"{_key_id()}:{_key_secret()}".encode()
+        ).decode()
+        req = urllib.request.Request(
+            f"{RAZORPAY_API}/payments/{payment_id}/refund",
+            data=payload,
+            headers={
+                "Authorization": f"Basic {creds}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return json.loads(resp.read().decode())
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode(errors="replace")
+            raise HTTPException(
+                status.HTTP_502_BAD_GATEWAY,
+                f"Razorpay rejected the refund request: {detail}",
+            )
+        except urllib.error.URLError as exc:
+            raise HTTPException(
+                status.HTTP_502_BAD_GATEWAY,
+                f"Could not reach Razorpay: {exc.reason}",
+            )
+
     def verify_signature(
         self, order_id: str, payment_id: str, signature: str
     ) -> bool:
