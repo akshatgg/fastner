@@ -86,7 +86,7 @@ export default function ProductView({ slug }: { slug: string }) {
                       <img
                         src={product.images[active]}
                         alt={product.name}
-                        className="h-full w-full object-contain p-8"
+                        className="h-full w-full object-contain p-4 sm:p-8"
                       />
                     ) : (
                       <span className="font-display text-8xl font-bold text-ink-200">
@@ -114,7 +114,7 @@ export default function ProductView({ slug }: { slug: string }) {
 
                 {/* Details */}
                 <div>
-                  <h1 className="font-display text-3xl font-bold uppercase leading-tight text-ink-900 lg:text-4xl">
+                  <h1 className="font-display text-2xl font-bold uppercase leading-tight text-ink-900 sm:text-3xl lg:text-4xl">
                     {product.name}
                   </h1>
                   {product.sku && (
@@ -205,7 +205,7 @@ export default function ProductView({ slug }: { slug: string }) {
                   </div>
 
                   {product.is_out_of_stock && (
-                    <p className="mt-4 inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700">
+                    <p className="mt-4 inline-flex items-center gap-2 rounded-lg border border-danger-200 bg-danger-50 px-4 py-2.5 text-sm font-semibold text-danger-700">
                       Out of stock — currently unavailable. Check back soon or
                       enquire below.
                     </p>
@@ -241,7 +241,7 @@ export default function ProductView({ slug }: { slug: string }) {
                         addToCart.mutate({ product_id: product.id, quantity: qty })
                       }
                       disabled={addToCart.isPending || product.is_out_of_stock}
-                      className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-50"
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-50 sm:flex-none"
                     >
                       <ShoppingCart className="h-4 w-4" />
                       {product.is_out_of_stock

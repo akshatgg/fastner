@@ -70,53 +70,55 @@ export default function AdminTicketsPage() {
             <p className="mt-3 text-sm text-ink-500">No tickets here.</p>
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-ink-100 bg-ink-50/60 text-xs uppercase tracking-wide text-ink-500">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Ticket</th>
-                <th className="hidden px-4 py-3 font-semibold sm:table-cell">
-                  Customer
-                </th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 text-right font-semibold">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ink-50">
-              {list.map((t) => {
-                const badge = ticketStatusBadge(t.status);
-                return (
-                  <tr key={t.id} className="hover:bg-ink-50/40">
-                    <td className="px-4 py-3">
-                      <p className="font-semibold text-ink-900">{t.subject}</p>
-                      <p className="text-xs text-ink-400">
-                        {t.reference}
-                        {t.order_reference && ` · Order ${t.order_reference}`}
-                      </p>
-                    </td>
-                    <td className="hidden px-4 py-3 sm:table-cell">
-                      <p className="text-ink-800">{t.customer_name ?? "—"}</p>
-                      <p className="text-xs text-ink-400">{t.customer_email}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${badge.cls}`}
-                      >
-                        {badge.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => setSelectedId(t.id)}
-                        className="rounded-lg border border-ink-200 px-3 py-1.5 text-sm font-semibold text-ink-700 transition hover:border-brand-400 hover:text-brand-600"
-                      >
-                        Open
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-ink-100 bg-ink-50/60 text-xs uppercase tracking-wide text-ink-500">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Ticket</th>
+                  <th className="hidden px-4 py-3 font-semibold sm:table-cell">
+                    Customer
+                  </th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 text-right font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink-50">
+                {list.map((t) => {
+                  const badge = ticketStatusBadge(t.status);
+                  return (
+                    <tr key={t.id} className="hover:bg-ink-50/40">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-ink-900">{t.subject}</p>
+                        <p className="text-xs text-ink-400">
+                          {t.reference}
+                          {t.order_reference && ` · Order ${t.order_reference}`}
+                        </p>
+                      </td>
+                      <td className="hidden px-4 py-3 sm:table-cell">
+                        <p className="text-ink-800">{t.customer_name ?? "—"}</p>
+                        <p className="text-xs text-ink-400">{t.customer_email}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-block w-fit whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${badge.cls}`}
+                        >
+                          {badge.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => setSelectedId(t.id)}
+                          className="whitespace-nowrap rounded-lg border border-ink-200 px-3 py-1.5 text-sm font-semibold text-ink-700 transition hover:border-brand-400 hover:text-brand-600"
+                        >
+                          Open
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -152,8 +154,8 @@ function TicketDetail({ id }: { id: string }) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:flex-wrap">
+        <div className="min-w-0">
           <p className="font-display text-lg font-bold text-ink-900">
             {ticket.subject}
           </p>
@@ -161,7 +163,7 @@ function TicketDetail({ id }: { id: string }) {
             {ticket.reference}
             {ticket.order_reference && ` · Order ${ticket.order_reference}`}
           </p>
-          <p className="mt-1 text-sm text-ink-600">
+          <p className="mt-1 break-words text-sm text-ink-600">
             {ticket.customer_name}{" "}
             <span className="text-ink-400">· {ticket.customer_email}</span>
           </p>
@@ -169,7 +171,7 @@ function TicketDetail({ id }: { id: string }) {
         <select
           value={ticket.status}
           onChange={(e) => setStatus.mutate({ id: ticket.id, status: e.target.value })}
-          className="rounded-lg border border-ink-200 px-3 py-1.5 text-sm font-semibold text-ink-700 outline-none focus:border-brand-500"
+          className="w-full shrink-0 rounded-lg border border-ink-200 px-3 py-1.5 text-sm font-semibold text-ink-700 outline-none focus:border-brand-500 sm:w-auto"
         >
           {TICKET_STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -189,7 +191,7 @@ function TicketDetail({ id }: { id: string }) {
               className={`flex ${fromAdmin ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
                   fromAdmin
                     ? "bg-brand-500 text-white"
                     : "border border-ink-100 bg-white text-ink-800"
@@ -211,7 +213,7 @@ function TicketDetail({ id }: { id: string }) {
       </div>
 
       {/* Reply */}
-      <form onSubmit={send} className="flex items-end gap-2">
+      <form onSubmit={send} className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-end">
         <textarea
           rows={2}
           value={body}
@@ -222,7 +224,7 @@ function TicketDetail({ id }: { id: string }) {
         <button
           type="submit"
           disabled={reply.isPending || !body.trim()}
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-50"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-50"
         >
           <Send className="h-4 w-4" />
           {reply.isPending ? "Sending…" : "Reply"}

@@ -91,9 +91,18 @@ class AuthService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only a superadmin can change a superadmin's role.",
             )
+        previous_role = user.role
         user.role = new_role
         self.db.commit()
         self.db.refresh(user)
+        logger.info(
+            "Role changed for user %s (%s): %s -> %s by actor %s",
+            user.id,
+            user.email,
+            previous_role,
+            new_role,
+            actor.id,
+        )
         return user
 
     # --- registration / login -----------------------------------------------
@@ -116,6 +125,9 @@ class AuthService:
         self.db.add(user)
         self.db.commit()
         self.db.refresh(user)
+        logger.info(
+            "Registered user %s (%s), auto_verify=%s", user.id, user.email, auto_verify
+        )
 
         if auto_verify:
             tokens = self._issue_token_pair(user)
@@ -151,6 +163,77 @@ class AuthService:
             )
         return self._issue_token_pair(user)
 
+    def authenticate_google(self, credential: str) -> TokenResponse:
+        """Sign in — or transparently register — from a Google ID token.
+
+        The browser obtains the token from Google Sign-In and posts it here. We
+        verify it, then resolve the account by ``google_id`` first; failing that,
+        by email (linking Google to an existing password account); failing that,
+        a brand-new password-less account is created. Google accounts skip our
+        own email verification — Google has already confirmed the address.
+        """
+        if not settings.GOOGLE_CLIENT_ID:
+            logger.warning("Google sign-in attempted but GOOGLE_CLIENT_ID is not configured")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Google sign-in is not configured.",
+            )
+        try:
+            claims = helpers.verify_google_id_token(credential)
+        except Exception:  # noqa: BLE001 — any verification failure is a 401
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not verify your Google sign-in. Please try again.",
+            )
+
+        google_sub = claims.get("sub")
+        email = (claims.get("email") or "").strip().lower()
+        if not google_sub or not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Google didn't return enough account information.",
+            )
+        if not claims.get("email_verified", False):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Your Google email address isn't verified.",
+            )
+        full_name = (claims.get("name") or "").strip() or email.split("@")[0]
+
+        # Match by Google id; else link to an existing email account; else create.
+        user = self.db.scalar(select(User).where(User.google_id == google_sub))
+        if user is None:
+            user = self.get_user_by_email(email)
+            if user is not None:
+                # Existing (likely password) account — attach this Google identity.
+                user.google_id = google_sub
+                user.is_verified = True
+                newly_created = False
+            else:
+                user = User(
+                    full_name=full_name,
+                    email=email,
+                    hashed_password=None,  # Google-only account, no local password
+                    google_id=google_sub,
+                    is_verified=True,
+                )
+                self.db.add(user)
+                newly_created = True
+            self.db.commit()
+            self.db.refresh(user)
+            if newly_created:
+                logger.info(
+                    "Registered Google-only user %s (%s)", user.id, user.email
+                )
+            else:
+                logger.info(
+                    "Linked Google identity to existing user %s (%s)",
+                    user.id,
+                    user.email,
+                )
+
+        return self._issue_token_pair(user)
+
     # --- email verification --------------------------------------------------
 
     def verify_email(self, raw_token: str) -> User:
@@ -168,6 +251,9 @@ class AuthService:
         if record.expires_at <= datetime.now(timezone.utc):
             self.db.delete(record)
             self.db.commit()
+            logger.warning(
+                "Expired email-verification token consumed for user %s", record.user_id
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="This verification link has expired. Please request a new one.",
@@ -182,6 +268,7 @@ class AuthService:
         user.is_verified = True
         self.db.delete(record)  # single-use
         self.db.commit()
+        logger.info("Email verified for user %s (%s)", user.id, user.email)
         return user
 
     def resend_verification(self, email: str) -> None:
@@ -189,6 +276,7 @@ class AuthService:
         unverified. Always silent to avoid leaking which emails are registered."""
         user = self.get_user_by_email(email)
         if user is None or user.is_verified:
+            logger.warning("Resend-verification no-op for email %s", email)
             return
         # Drop any outstanding tokens so only the newest link works.
         self.db.execute(
@@ -197,6 +285,7 @@ class AuthService:
             )
         )
         self.db.commit()
+        logger.info("Re-issuing verification email for user %s (%s)", user.id, user.email)
         self._send_verification(user)
 
     # --- password reset ------------------------------------------------------
@@ -208,6 +297,7 @@ class AuthService:
         user = self.get_user_by_email(email)
         # Google-only accounts have no password to reset — skip silently too.
         if user is None or user.hashed_password is None:
+            logger.warning("Password-reset request no-op for email %s", email)
             return
         # Invalidate any outstanding reset tokens so only the newest link works.
         self.db.execute(
@@ -222,6 +312,7 @@ class AuthService:
             )
         )
         self.db.commit()
+        logger.info("Issuing password-reset email for user %s (%s)", user.id, user.email)
         try:
             helpers.send_password_reset_email(user.email, user.full_name, raw_token)
         except Exception:  # noqa: BLE001 — a send failure shouldn't 500 the request
@@ -245,6 +336,9 @@ class AuthService:
         if record.expires_at <= datetime.now(timezone.utc):
             self.db.delete(record)
             self.db.commit()
+            logger.warning(
+                "Expired password-reset token consumed for user %s", record.user_id
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="This reset link has expired. Please request a new one.",
@@ -261,6 +355,9 @@ class AuthService:
         # Revoke all sessions: old credentials must not stay valid after a reset.
         self.db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
         self.db.commit()
+        logger.info(
+            "Password reset for user %s (%s); all sessions revoked", user.id, user.email
+        )
 
     # --- self-service password & account -------------------------------------
 
@@ -291,6 +388,11 @@ class AuthService:
         user.hashed_password = helpers.hash_password(new_password)
         # Drop every session, then mint a fresh pair (committed by the helper).
         self.db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
+        logger.info(
+            "Password changed for user %s (%s); other sessions revoked",
+            user.id,
+            user.email,
+        )
         return self._issue_token_pair(user)
 
     def delete_account(self, user: User, password: str | None) -> None:
@@ -316,6 +418,12 @@ class AuthService:
             .where(Order.status.in_(ACTIVE_STATUSES))
         )
         if open_orders:
+            logger.warning(
+                "Account deletion blocked for user %s (%s): %s active order(s)",
+                user.id,
+                user.email,
+                open_orders,
+            )
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
@@ -324,8 +432,10 @@ class AuthService:
                 ),
             )
 
+        user_id, user_email = user.id, user.email
         self.db.delete(user)
         self.db.commit()
+        logger.info("Account deleted for user %s (%s)", user_id, user_email)
 
     # --- refresh-token flow --------------------------------------------------
 
@@ -399,6 +509,8 @@ class AuthService:
             helpers.send_verification_email(user.email, user.full_name, raw_token)
         except Exception:  # noqa: BLE001 — never fail signup on email trouble
             logger.exception("Failed to send verification email to %s", user.email)
+        else:
+            logger.info("Sent verification email to user %s (%s)", user.id, user.email)
 
     def _issue_token_pair(self, user: User) -> TokenResponse:
         access_token = helpers.create_access_token(user.id, user.role)

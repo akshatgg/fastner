@@ -29,8 +29,17 @@ def send_email(
 
     Raises on a Postmark/transport error so callers can decide how to react.
     If ``POSTMARK_SERVER_TOKEN`` is unset, logs the message and returns without
-    sending (dev fallback).
+    sending (dev fallback). If ``EMAIL_ENABLED`` is false, sending is disabled
+    globally and the call is a no-op.
     """
+    # Master kill-switch: when email is disabled, no message ever leaves — this
+    # gate covers every flow (verification, password reset, orders, support).
+    if not settings.EMAIL_ENABLED:
+        logger.info(
+            "Email disabled (EMAIL_ENABLED=false) — skipping send to %s: %r", to, subject
+        )
+        return
+
     if not settings.POSTMARK_SERVER_TOKEN:
         logger.warning(
             "POSTMARK_SERVER_TOKEN not set — not sending. Email to %s: %r", to, subject
@@ -61,6 +70,7 @@ def send_email(
     try:
         with urllib.request.urlopen(request, timeout=10) as resp:
             resp.read()
+        logger.info("Sent email to %s via Postmark: %r", to, subject)
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode(errors="replace")
         logger.error("Postmark send failed (HTTP %s): %s", exc.code, detail)

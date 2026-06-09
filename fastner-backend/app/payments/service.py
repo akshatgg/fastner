@@ -18,11 +18,14 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import urllib.error
 import urllib.request
 
 from fastapi import HTTPException, status
+
+logger = logging.getLogger(__name__)
 
 RAZORPAY_API = "https://api.razorpay.com/v1"
 
@@ -86,14 +89,32 @@ class RazorpayService:
         )
         try:
             with urllib.request.urlopen(req, timeout=15) as resp:
-                return json.loads(resp.read().decode())
+                order = json.loads(resp.read().decode())
+                logger.info(
+                    "Razorpay order created (id=%s, amount_paise=%s, receipt=%s)",
+                    order.get("id"),
+                    amount_paise,
+                    receipt or "",
+                )
+                return order
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode(errors="replace")
+            logger.error(
+                "Razorpay rejected order request (amount_paise=%s): %s",
+                amount_paise,
+                detail,
+            )
             raise HTTPException(
                 status.HTTP_502_BAD_GATEWAY,
                 f"Razorpay rejected the order request: {detail}",
             )
         except urllib.error.URLError as exc:
+            logger.error(
+                "Could not reach Razorpay creating order (amount_paise=%s): %s",
+                amount_paise,
+                exc.reason,
+                exc_info=True,
+            )
             raise HTTPException(
                 status.HTTP_502_BAD_GATEWAY,
                 f"Could not reach Razorpay: {exc.reason}",
@@ -124,14 +145,32 @@ class RazorpayService:
         )
         try:
             with urllib.request.urlopen(req, timeout=15) as resp:
-                return json.loads(resp.read().decode())
+                refund = json.loads(resp.read().decode())
+                logger.info(
+                    "Razorpay refund created (id=%s, payment_id=%s, status=%s)",
+                    refund.get("id"),
+                    payment_id,
+                    refund.get("status"),
+                )
+                return refund
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode(errors="replace")
+            logger.error(
+                "Razorpay rejected refund request (payment_id=%s): %s",
+                payment_id,
+                detail,
+            )
             raise HTTPException(
                 status.HTTP_502_BAD_GATEWAY,
                 f"Razorpay rejected the refund request: {detail}",
             )
         except urllib.error.URLError as exc:
+            logger.error(
+                "Could not reach Razorpay refunding payment (payment_id=%s): %s",
+                payment_id,
+                exc.reason,
+                exc_info=True,
+            )
             raise HTTPException(
                 status.HTTP_502_BAD_GATEWAY,
                 f"Could not reach Razorpay: {exc.reason}",
@@ -148,4 +187,17 @@ class RazorpayService:
             f"{order_id}|{payment_id}".encode(),
             hashlib.sha256,
         ).hexdigest()
-        return hmac.compare_digest(expected, signature)
+        ok = hmac.compare_digest(expected, signature)
+        if ok:
+            logger.info(
+                "Razorpay payment verified (order_id=%s, payment_id=%s)",
+                order_id,
+                payment_id,
+            )
+        else:
+            logger.warning(
+                "Razorpay signature verification failed (order_id=%s, payment_id=%s)",
+                order_id,
+                payment_id,
+            )
+        return ok

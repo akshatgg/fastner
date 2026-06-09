@@ -155,6 +155,14 @@ class OrderService:
         # Empty the cart (this commits the whole transaction, order included).
         CartService(self.db).clear(user.id)
         self.db.refresh(order)
+        logger.info(
+            "Order %s placed (user=%s, mode=%s, total=%s, payment_status=%s)",
+            order.reference,
+            user.id,
+            order.mode,
+            order.total,
+            order.payment_status,
+        )
         emails.send_order_placed(order, user)
         return order
 
@@ -218,6 +226,9 @@ class OrderService:
             order.expected_delivery_date = data.expected_delivery_date
         self.db.commit()
         self.db.refresh(order)
+        logger.info(
+            "Order %s approved (eta=%s)", order.reference, order.expected_delivery_date
+        )
         emails.send_order_approved(order, order.user)
         return order
 
@@ -244,15 +255,30 @@ class OrderService:
                 try:
                     refund = RazorpayService().refund_payment(order.razorpay_payment_id)
                     order.razorpay_refund_id = refund.get("id")
+                    logger.info(
+                        "Refund initiated for order %s (refund_id=%s)",
+                        order.reference,
+                        order.razorpay_refund_id,
+                    )
                 except HTTPException:
                     logger.exception(
                         "Refund request failed for order %s; marking refund_initiated",
                         order.reference,
                     )
+            else:
+                logger.warning(
+                    "Razorpay disabled; refund for order %s must be issued manually",
+                    order.reference,
+                )
             order.payment_status = "refund_initiated"
 
         self.db.commit()
         self.db.refresh(order)
+        logger.info(
+            "Order %s declined (payment_status=%s)",
+            order.reference,
+            order.payment_status,
+        )
         emails.send_order_declined(order, order.user)
         return order
 
@@ -278,6 +304,7 @@ class OrderService:
             order.expected_delivery_date = data.expected_delivery_date
         self.db.commit()
         self.db.refresh(order)
+        logger.info("Order %s status -> %s", order.reference, order.status)
         if data.status in ("shipped", "delivered", "cancelled"):
             emails.send_order_status_update(order, order.user)
         return order

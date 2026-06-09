@@ -6,6 +6,7 @@
     a code instantly.
 """
 
+import logging
 import uuid
 from decimal import Decimal
 
@@ -18,6 +19,8 @@ from app.core.database import get_db
 from app.coupons import schemas
 from app.coupons.service import CouponService
 from app.utils.dependencies import get_current_user, require_role
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/coupons", tags=["coupons"])
 
@@ -52,6 +55,7 @@ def list_coupons(db: Session = Depends(get_db)):
     "", response_model=schemas.CouponResponse, status_code=status.HTTP_201_CREATED
 )
 def create_coupon(data: schemas.CouponCreate, db: Session = Depends(get_db)):
+    logger.info("Admin create coupon code=%s", data.code)
     return CouponService(db).create_coupon(data)
 
 
@@ -64,9 +68,11 @@ def get_coupon(coupon_id: uuid.UUID, db: Session = Depends(get_db)):
 def update_coupon(
     coupon_id: uuid.UUID, data: schemas.CouponUpdate, db: Session = Depends(get_db)
 ):
+    logger.info("Admin update coupon id=%s", coupon_id)
     return CouponService(db).update_coupon(coupon_id, data)
 
 
 @admin_router.delete("/{coupon_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_coupon(coupon_id: uuid.UUID, db: Session = Depends(get_db)):
+    logger.info("Admin delete coupon id=%s", coupon_id)
     CouponService(db).delete_coupon(coupon_id)

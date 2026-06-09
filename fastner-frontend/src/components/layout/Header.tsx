@@ -217,7 +217,7 @@ export default function Header() {
                           setProfileOpen(false);
                           logout.mutate();
                         }}
-                        className="flex w-full items-center gap-2.5 border-t border-ink-50 px-4 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                        className="flex w-full items-center gap-2.5 border-t border-ink-50 px-4 py-2.5 text-left text-sm font-medium text-danger-600 transition-colors hover:bg-danger-50"
                       >
                         <LogOut className="h-4 w-4" />
                         Sign out
@@ -315,7 +315,7 @@ export default function Header() {
                     setOpen(false);
                     logout.mutate();
                   }}
-                  className="flex w-full items-center gap-2.5 py-3 text-left text-lg font-semibold text-red-600"
+                  className="flex w-full items-center gap-2.5 py-3 text-left text-lg font-semibold text-danger-600"
                 >
                   <LogOut className="h-5 w-5" />
                   Sign out

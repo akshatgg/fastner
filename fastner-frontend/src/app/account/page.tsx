@@ -15,7 +15,9 @@ function Detail({ label, value }: { label: string; value: string }) {
       <span className="text-sm font-semibold uppercase tracking-wide text-ink-400">
         {label}
       </span>
-      <span className="text-base font-medium text-ink-900">{value || "—"}</span>
+      <span className="break-words text-base font-medium text-ink-900 sm:text-right">
+        {value || "—"}
+      </span>
     </div>
   );
 }
@@ -40,7 +42,7 @@ function PhoneDetail({ phone }: { phone: string | null }) {
         Phone
       </span>
       {editing ? (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             autoFocus
             type="tel"
@@ -55,7 +57,7 @@ function PhoneDetail({ phone }: { phone: string | null }) {
               }
             }}
             placeholder="Enter your phone number"
-            className="w-48 rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            className="w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 sm:w-48"
           />
           <button
             onClick={save}
@@ -101,19 +103,19 @@ export default function AccountPage() {
 
       <div className="mt-8 rounded-2xl border border-ink-100 bg-white p-6 shadow-card sm:p-8">
         <div className="mb-6 flex items-center gap-4">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-500 text-xl font-bold text-white">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-500 text-xl font-bold text-white">
             {(user?.full_name?.trim()[0] ?? "U").toUpperCase()}
           </span>
-          <div>
-            <p className="font-display text-xl font-bold uppercase text-ink-900">
+          <div className="min-w-0">
+            <p className="break-words font-display text-xl font-bold uppercase text-ink-900">
               {user?.full_name}
             </p>
             {user?.is_verified ? (
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-600">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-success-600">
                 <BadgeCheck className="h-4 w-4" /> Verified
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-600">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-warning-600">
                 <ShieldAlert className="h-4 w-4" /> Not verified
               </span>
             )}

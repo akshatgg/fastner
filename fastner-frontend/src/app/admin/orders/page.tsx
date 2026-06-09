@@ -81,64 +81,66 @@ export default function AdminOrdersPage() {
             <p className="mt-3 text-sm text-ink-500">No orders here.</p>
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-ink-100 bg-ink-50/60 text-xs uppercase tracking-wide text-ink-500">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Order</th>
-                <th className="hidden px-4 py-3 font-semibold sm:table-cell">
-                  Customer
-                </th>
-                <th className="px-4 py-3 font-semibold">Total</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 text-right font-semibold">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ink-50">
-              {list.map((o) => {
-                const status = orderStatusBadge(o.status);
-                const payment = paymentStatusBadge(o.payment_status);
-                return (
-                  <tr key={o.id} className="hover:bg-ink-50/40">
-                    <td className="px-4 py-3">
-                      <p className="font-semibold text-ink-900">{o.reference}</p>
-                      <p className="text-xs text-ink-400">
-                        {formatDate(o.created_at)}
-                      </p>
-                    </td>
-                    <td className="hidden px-4 py-3 sm:table-cell">
-                      <p className="text-ink-800">{o.customer_name ?? "—"}</p>
-                      <p className="text-xs text-ink-400">{o.customer_email}</p>
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-ink-900">
-                      {formatPrice(o.total)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col gap-1">
-                        <span
-                          className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${status.cls}`}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-ink-100 bg-ink-50/60 text-xs uppercase tracking-wide text-ink-500">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Order</th>
+                  <th className="hidden px-4 py-3 font-semibold sm:table-cell">
+                    Customer
+                  </th>
+                  <th className="px-4 py-3 font-semibold">Total</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 text-right font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink-50">
+                {list.map((o) => {
+                  const status = orderStatusBadge(o.status);
+                  const payment = paymentStatusBadge(o.payment_status);
+                  return (
+                    <tr key={o.id} className="hover:bg-ink-50/40">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-ink-900">{o.reference}</p>
+                        <p className="whitespace-nowrap text-xs text-ink-400">
+                          {formatDate(o.created_at)}
+                        </p>
+                      </td>
+                      <td className="hidden px-4 py-3 sm:table-cell">
+                        <p className="text-ink-800">{o.customer_name ?? "—"}</p>
+                        <p className="text-xs text-ink-400">{o.customer_email}</p>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 font-semibold text-ink-900">
+                        {formatPrice(o.total)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col gap-1">
+                          <span
+                            className={`w-fit whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${status.cls}`}
+                          >
+                            {status.label}
+                          </span>
+                          <span
+                            className={`w-fit whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${payment.cls}`}
+                          >
+                            {payment.label}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => setSelectedId(o.id)}
+                          className="whitespace-nowrap rounded-lg border border-ink-200 px-3 py-1.5 text-sm font-semibold text-ink-700 transition hover:border-brand-400 hover:text-brand-600"
                         >
-                          {status.label}
-                        </span>
-                        <span
-                          className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${payment.cls}`}
-                        >
-                          {payment.label}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => setSelectedId(o.id)}
-                        className="rounded-lg border border-ink-200 px-3 py-1.5 text-sm font-semibold text-ink-700 transition hover:border-brand-400 hover:text-brand-600"
-                      >
-                        Manage
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          Manage
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -211,7 +213,7 @@ function OrderDetail({ id, onClose }: { id: string; onClose: () => void }) {
             <button
               disabled={busy}
               onClick={() => setDeclining(true)}
-              className="rounded-lg border border-red-200 px-5 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+              className="rounded-lg border border-danger-200 px-5 py-2 text-sm font-bold text-danger-600 transition hover:bg-danger-50 disabled:opacity-50"
             >
               Decline
             </button>
@@ -220,8 +222,8 @@ function OrderDetail({ id, onClose }: { id: string; onClose: () => void }) {
       )}
 
       {order.status === "pending_approval" && declining && (
-        <div className="space-y-3 rounded-xl border border-red-200 bg-red-50/50 p-4">
-          <p className="text-sm font-semibold text-red-800">
+        <div className="space-y-3 rounded-xl border border-danger-200 bg-danger-50/50 p-4">
+          <p className="text-sm font-semibold text-danger-800">
             Decline order — {order.payment_status === "paid"
               ? "the payment will be refunded (4–5 working days)."
               : "no payment was captured."}
@@ -242,7 +244,7 @@ function OrderDetail({ id, onClose }: { id: string; onClose: () => void }) {
                   input: { reason: reason.trim() },
                 }).then(onClose)
               }
-              className="rounded-lg bg-red-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+              className="rounded-lg bg-danger-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-danger-700 disabled:opacity-50"
             >
               Confirm decline
             </button>
@@ -308,7 +310,7 @@ function OrderDetail({ id, onClose }: { id: string; onClose: () => void }) {
                     input: { status: "delivered" },
                   }).then(onClose)
                 }
-                className="rounded-lg bg-green-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-green-700 disabled:opacity-50"
+                className="rounded-lg bg-success-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-success-700 disabled:opacity-50"
               >
                 Mark as delivered
               </button>
@@ -321,7 +323,7 @@ function OrderDetail({ id, onClose }: { id: string; onClose: () => void }) {
                   input: { status: "cancelled" },
                 }).then(onClose)
               }
-              className="rounded-lg border border-ink-200 px-4 py-2 text-sm font-semibold text-ink-600 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50"
+              className="rounded-lg border border-ink-200 px-4 py-2 text-sm font-semibold text-ink-600 transition hover:border-danger-300 hover:text-danger-600 disabled:opacity-50"
             >
               Cancel order
             </button>
@@ -369,7 +371,7 @@ function OrderSummary({ order }: { order: AdminOrder }) {
         </p>
       )}
       {order.decline_reason && (
-        <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-2 rounded-lg border border-danger-200 bg-danger-50 px-3 py-2 text-sm text-danger-700">
           Decline reason: {order.decline_reason}
         </p>
       )}
@@ -410,7 +412,7 @@ function OrderSummary({ order }: { order: AdminOrder }) {
           <span>{formatPrice(order.subtotal)}</span>
         </div>
         {order.discount_amount > 0 && (
-          <div className="flex justify-between text-green-700">
+          <div className="flex justify-between text-success-700">
             <span>Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}</span>
             <span>−{formatPrice(order.discount_amount)}</span>
           </div>

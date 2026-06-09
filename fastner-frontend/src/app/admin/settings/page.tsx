@@ -64,7 +64,7 @@ export default function AdminSettingsPage() {
           <span className="text-sm font-semibold text-ink-500">%</span>
         </div>
         {!valid && rate !== "" && (
-          <p className="mt-2 text-xs text-red-600">
+          <p className="mt-2 text-xs text-danger-600">
             Enter a rate between 0 and 100.
           </p>
         )}

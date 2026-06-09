@@ -75,9 +75,9 @@ function OrderCard({ order }: { order: Order }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-ink-100 bg-white shadow-card">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 bg-ink-50/40 px-5 py-4 sm:px-6">
-        <div>
-          <p className="font-display text-base font-bold uppercase tracking-wide text-ink-900">
+      <div className="flex flex-col gap-3 border-b border-ink-100 bg-ink-50/40 px-5 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
+        <div className="min-w-0">
+          <p className="break-words font-display text-base font-bold uppercase tracking-wide text-ink-900">
             {order.reference}
           </p>
           <p className="text-xs text-ink-500">Placed {formatDate(order.created_at)}</p>
@@ -101,7 +101,7 @@ function OrderCard({ order }: { order: Order }) {
         <p className="text-sm text-ink-600">{orderStatusHint(order.status)}</p>
 
         {order.status === "declined" && order.decline_reason && (
-          <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="mt-2 rounded-lg border border-danger-200 bg-danger-50 px-3 py-2 text-sm text-danger-700">
             Reason: {order.decline_reason}
           </p>
         )}
@@ -161,7 +161,7 @@ function OrderCard({ order }: { order: Order }) {
             <span>{formatPrice(order.subtotal)}</span>
           </div>
           {order.discount_amount > 0 && (
-            <div className="flex justify-between text-green-700">
+            <div className="flex justify-between text-success-700">
               <span>Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}</span>
               <span>−{formatPrice(order.discount_amount)}</span>
             </div>

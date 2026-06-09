@@ -12,6 +12,7 @@ import {
   changePasswordRequest,
   deleteAccountRequest,
   forgotPasswordRequest,
+  googleLoginRequest,
   listUsers,
   loginRequest,
   logoutRequest,
@@ -91,6 +92,24 @@ export function useLogin() {
     },
     onError: (error) => {
       toast.error(errorMessage(error, "Could not sign you in."));
+    },
+  });
+}
+
+/** Sign in / register with a Google ID token, then establish the session. */
+export function useGoogleLogin() {
+  const establish = useEstablishSession();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: (credential: string) => googleLoginRequest(credential),
+    onSuccess: async (tokens) => {
+      await establish(tokens);
+      toast.success("Signed in with Google. Welcome!");
+      router.push("/");
+    },
+    onError: (error) => {
+      toast.error(errorMessage(error, "Could not sign you in with Google."));
     },
   });
 }

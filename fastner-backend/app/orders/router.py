@@ -5,6 +5,7 @@
     (with refund), advance fulfilment status, and set delivery dates.
 """
 
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
@@ -15,6 +16,8 @@ from app.core.database import get_db
 from app.orders import schemas
 from app.orders.service import OrderService
 from app.utils.dependencies import get_current_user, require_role
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -103,6 +106,7 @@ def admin_update_status(
     db: Session = Depends(get_db),
 ):
     """Advance fulfilment status (shipped / delivered / cancelled)."""
+    logger.info("Admin updating order %s status -> %s", order_id, data.status)
     svc = OrderService(db)
     return svc.to_admin_response(svc.update_status(order_id, data))
 

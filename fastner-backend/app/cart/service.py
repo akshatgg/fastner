@@ -7,6 +7,7 @@ mode re-prices the cart and, for B2B, lifts each line to the product's bulk
 minimum quantity.
 """
 
+import logging
 import uuid
 
 from fastapi import HTTPException, status
@@ -16,6 +17,8 @@ from sqlalchemy.orm import Session
 from app.cart import schemas
 from app.cart.models import CartItem
 from app.catalog.models import Product
+
+logger = logging.getLogger(__name__)
 
 _DEFAULT_MODE: schemas.CartMode = "b2c"
 
@@ -40,10 +43,14 @@ class CartService:
         if product is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Product not found.")
         if not product.is_active:
+            logger.warning("Add-to-cart blocked: product %s is inactive.", product_id)
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST, "This product is no longer available."
             )
         if product.is_out_of_stock:
+            logger.warning(
+                "Add-to-cart blocked: product %s is out of stock.", product_id
+            )
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST, "This product is currently out of stock."
             )
@@ -128,6 +135,13 @@ class CartService:
                 )
             )
         self.db.commit()
+        logger.info(
+            "Cart item added/updated: user=%s product=%s qty=%d mode=%s",
+            user_id,
+            data.product_id,
+            new_qty,
+            data.mode,
+        )
         return self._build_cart(user_id)
 
     def update_quantity(
@@ -145,6 +159,12 @@ class CartService:
             quantity = max(quantity, item.product.b2b_min_qty)
         item.quantity = quantity
         self.db.commit()
+        logger.info(
+            "Cart item quantity updated: user=%s product=%s qty=%d",
+            user_id,
+            product_id,
+            quantity,
+        )
         return self._build_cart(user_id)
 
     def set_mode(
@@ -157,6 +177,7 @@ class CartService:
             if mode == "b2b":
                 item.quantity = max(item.quantity, item.product.b2b_min_qty)
         self.db.commit()
+        logger.info("Cart mode switched: user=%s mode=%s", user_id, mode)
         return self._build_cart(user_id)
 
     def remove_item(
@@ -170,10 +191,21 @@ class CartService:
         if item is not None:
             self.db.delete(item)
             self.db.commit()
+            logger.info(
+                "Cart item removed: user=%s product=%s", user_id, product_id
+            )
+        else:
+            logger.warning(
+                "Cart item remove is a no-op: user=%s product=%s not in cart.",
+                user_id,
+                product_id,
+            )
         return self._build_cart(user_id)
 
     def clear(self, user_id: uuid.UUID) -> schemas.CartResponse:
-        for item in self._items(user_id):
+        items = self._items(user_id)
+        for item in items:
             self.db.delete(item)
         self.db.commit()
+        logger.info("Cart cleared: user=%s items=%d", user_id, len(items))
         return self._build_cart(user_id)

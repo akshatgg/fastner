@@ -159,7 +159,7 @@ export default function CheckoutPage() {
         <Header />
         <main className="flex-1 bg-ink-50 py-16 sm:py-24">
           <div className="mx-auto max-w-xl px-4 text-center sm:px-6">
-            <CheckCircle2 className="mx-auto h-16 w-16 text-green-500" />
+            <CheckCircle2 className="mx-auto h-16 w-16 text-success-500" />
             <h1 className="mt-6 font-display text-2xl font-bold uppercase text-ink-900">
               Order placed
             </h1>
@@ -360,14 +360,14 @@ export default function CheckoutPage() {
                 {/* Coupon */}
                 <div className="mt-4 border-t border-ink-100 pt-4">
                   {coupon ? (
-                    <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2">
-                      <span className="flex items-center gap-2 text-sm font-semibold text-green-700">
+                    <div className="flex items-center justify-between rounded-lg border border-success-200 bg-success-50 px-3 py-2">
+                      <span className="flex items-center gap-2 text-sm font-semibold text-success-700">
                         <Tag className="h-4 w-4" />
                         {coupon.code} applied
                       </span>
                       <button
                         onClick={removeCoupon}
-                        className="text-xs font-semibold text-ink-500 hover:text-red-600"
+                        className="text-xs font-semibold text-ink-500 hover:text-danger-600"
                       >
                         Remove
                       </button>
@@ -410,7 +410,7 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                   {discount > 0 && (
-                    <div className="flex items-baseline justify-between text-green-700">
+                    <div className="flex items-baseline justify-between text-success-700">
                       <span>Discount ({coupon?.code})</span>
                       <span className="font-medium">−{formatPrice(discount)}</span>
                     </div>

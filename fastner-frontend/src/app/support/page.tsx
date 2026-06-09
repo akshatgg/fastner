@@ -270,7 +270,9 @@ function TicketThread({ ticketId }: { ticketId: string }) {
   }
 
   const badge = ticketStatusBadge(ticket.status);
-  const closed = ticket.status === "closed";
+  // Once the team resolves/closes a ticket the conversation is locked — the
+  // customer can still read the whole history but can't post new replies.
+  const locked = ticket.status === "resolved" || ticket.status === "closed";
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -283,11 +285,11 @@ function TicketThread({ ticketId }: { ticketId: string }) {
     <div className="flex h-full flex-col rounded-2xl border border-ink-100 bg-white shadow-card">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 px-5 py-4 sm:px-6">
-        <div>
-          <h2 className="font-display text-lg font-bold uppercase text-ink-900">
+        <div className="min-w-0">
+          <h2 className="break-words font-display text-lg font-bold uppercase text-ink-900">
             {ticket.subject}
           </h2>
-          <p className="text-xs text-ink-400">
+          <p className="break-words text-xs text-ink-400">
             {ticket.reference}
             {ticket.order_reference && ` · Order ${ticket.order_reference}`}
           </p>
@@ -329,31 +331,42 @@ function TicketThread({ ticketId }: { ticketId: string }) {
         })}
       </div>
 
-      {/* Reply box */}
-      <form onSubmit={send} className="border-t border-ink-100 p-4 sm:p-5">
-        {closed ? (
-          <p className="text-center text-sm text-ink-400">
-            This ticket is closed. Replying will reopen it.
+      {/* Reply box — locked once the team resolves/closes the ticket. The
+          history above stays readable; the customer raises a new ticket for
+          further help. */}
+      {locked ? (
+        <div className="border-t border-ink-100 p-4 text-center sm:p-5">
+          <p className="text-sm font-semibold text-ink-600">
+            This ticket has been{" "}
+            {ticket.status === "resolved" ? "resolved" : "closed"} — the
+            conversation is closed.
           </p>
-        ) : null}
-        <div className="flex items-end gap-2">
-          <textarea
-            className={`${inputCls} resize-none`}
-            rows={2}
-            value={reply}
-            onChange={(e) => setReply(e.target.value)}
-            placeholder="Type your reply…"
-          />
-          <button
-            type="submit"
-            disabled={addMessage.isPending || !reply.trim()}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-50"
-          >
-            <Send className="h-4 w-4" />
-            {addMessage.isPending ? "Sending…" : "Send"}
-          </button>
+          <p className="mt-1 text-xs text-ink-400">
+            You can still read the history above. Raise a new ticket if you need
+            more help.
+          </p>
         </div>
-      </form>
+      ) : (
+        <form onSubmit={send} className="border-t border-ink-100 p-4 sm:p-5">
+          <div className="flex items-end gap-2">
+            <textarea
+              className={`${inputCls} resize-none`}
+              rows={2}
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              placeholder="Type your reply…"
+            />
+            <button
+              type="submit"
+              disabled={addMessage.isPending || !reply.trim()}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600 disabled:opacity-50"
+            >
+              <Send className="h-4 w-4" />
+              {addMessage.isPending ? "Sending…" : "Send"}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

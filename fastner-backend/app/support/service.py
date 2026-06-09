@@ -6,6 +6,7 @@ move the ticket through its status. Every admin reply is emailed to the customer
 account email, so the conversation also lives in their inbox.
 """
 
+import logging
 import uuid
 
 from fastapi import HTTPException, status
@@ -16,6 +17,8 @@ from app.auth.models import User
 from app.orders.models import Order
 from app.support import emails, schemas
 from app.support.models import TICKET_STATUSES, SupportTicket, TicketMessage
+
+logger = logging.getLogger(__name__)
 
 
 class SupportService:
@@ -71,6 +74,10 @@ class SupportService:
         )
         self.db.commit()
         self.db.refresh(ticket)
+        logger.info(
+            "Support ticket opened ref=%s id=%s user=%s order_id=%s",
+            ticket.reference, ticket.id, user.id, order_id,
+        )
         emails.send_ticket_opened(ticket, user, data.message.strip())
         return ticket
 
@@ -95,16 +102,29 @@ class SupportService:
         self, user: User, ticket_id: uuid.UUID, body: str
     ) -> SupportTicket:
         ticket = self.get_my_ticket(user.id, ticket_id)
+        # Once the team marks a ticket resolved/closed the chat is locked: the
+        # customer keeps read access to the whole history but can't post new
+        # replies. They raise a fresh ticket if they still need help.
+        if ticket.status in ("resolved", "closed"):
+            logger.warning(
+                "Customer reply rejected on locked ticket ref=%s id=%s status=%s user=%s",
+                ticket.reference, ticket.id, ticket.status, user.id,
+            )
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "This ticket has been resolved and the conversation is closed. "
+                "Please raise a new ticket if you still need help.",
+            )
         self.db.add(
             TicketMessage(
                 ticket_id=ticket.id, author_role="user", body=body.strip()
             )
         )
-        # A customer reply reopens a resolved/closed ticket so it's seen again.
-        if ticket.status in ("resolved", "closed"):
-            ticket.status = "open"
         self.db.commit()
         self.db.refresh(ticket)
+        logger.info(
+            "Customer reply added ref=%s id=%s user=%s", ticket.reference, ticket.id, user.id
+        )
         return ticket
 
     # --- admin ---------------------------------------------------------------
@@ -135,17 +155,26 @@ class SupportService:
             ticket.status = "in_progress"
         self.db.commit()
         self.db.refresh(ticket)
+        logger.info(
+            "Admin reply added ref=%s id=%s status=%s", ticket.reference, ticket.id, ticket.status
+        )
         emails.send_admin_reply(ticket, ticket.user, body.strip())
         return ticket
 
     def set_status(self, ticket_id: uuid.UUID, new_status: str) -> SupportTicket:
         if new_status not in TICKET_STATUSES:
+            logger.warning("Invalid ticket status transition requested status=%s", new_status)
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
                 f"Status must be one of {', '.join(TICKET_STATUSES)}.",
             )
         ticket = self._get_any_ticket(ticket_id)
+        previous = ticket.status
         ticket.status = new_status
         self.db.commit()
         self.db.refresh(ticket)
+        logger.info(
+            "Ticket status changed ref=%s id=%s from=%s to=%s",
+            ticket.reference, ticket.id, previous, new_status,
+        )
         return ticket

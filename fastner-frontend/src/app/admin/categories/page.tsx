@@ -92,7 +92,7 @@ export default function CategoriesPage() {
             subcategories
           </span>
           <span className="flex items-center gap-1.5">
-            <Box className="h-3.5 w-3.5 text-green-600" /> leaf = holds products
+            <Box className="h-3.5 w-3.5 text-success-600" /> leaf = holds products
           </span>
           <span className="ml-auto hidden items-center gap-1.5 sm:flex">
             <GripVertical className="h-3.5 w-3.5" /> drag products to reorder
@@ -253,7 +253,7 @@ function CategoryRow({
               <Folder className="h-4.5 w-4.5 text-brand-500" />
             )
           ) : (
-            <Box className="h-4.5 w-4.5 text-green-600" />
+            <Box className="h-4.5 w-4.5 text-success-600" />
           )}
         </span>
 
@@ -267,7 +267,7 @@ function CategoryRow({
               </span>
             )}
             {node.is_leaf && (
-              <span className="rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-green-600">
+              <span className="rounded bg-success-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-success-600">
                 leaf
               </span>
             )}
@@ -461,7 +461,7 @@ function LeafProductList({
           <button
             title="Edit product"
             onClick={() => onEditProduct(p)}
-            className="rounded-md p-1.5 text-ink-400 opacity-0 transition hover:bg-white hover:text-brand-600 group-hover/prod:opacity-100"
+            className="rounded-md p-1.5 text-ink-400 opacity-100 transition hover:bg-white hover:text-brand-600 sm:opacity-0 sm:group-hover/prod:opacity-100"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
@@ -471,7 +471,7 @@ function LeafProductList({
               if (confirm(`Delete “${p.name}”? This can't be undone.`))
                 del.mutate(p.id);
             }}
-            className="rounded-md p-1.5 text-ink-400 opacity-0 transition hover:bg-white hover:text-red-600 group-hover/prod:opacity-100"
+            className="rounded-md p-1.5 text-ink-400 opacity-100 transition hover:bg-white hover:text-danger-600 sm:opacity-0 sm:group-hover/prod:opacity-100"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -500,7 +500,7 @@ function IconBtn({
       onClick={onClick}
       className={`rounded-md p-1.5 transition hover:bg-white ${
         danger
-          ? "text-ink-400 hover:text-red-600"
+          ? "text-ink-400 hover:text-danger-600"
           : accent
             ? "text-brand-500 hover:text-brand-700"
             : "text-ink-400 hover:text-brand-600"

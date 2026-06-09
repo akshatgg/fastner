@@ -154,7 +154,7 @@ export function AuthField({
             : {})}
           className={`w-full rounded-md border bg-white px-3.5 py-2.5 text-sm text-ink-900 shadow-sm outline-none transition-colors placeholder:text-ink-400 focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${
             error
-              ? "border-red-400 focus:border-red-500 focus:ring-red-500/30"
+              ? "border-danger-400 focus:border-danger-500 focus:ring-danger-500/30"
               : "border-ink-200 focus:border-brand-500 focus:ring-brand-500/30"
           }`}
         />
@@ -169,7 +169,7 @@ export function AuthField({
           </button>
         )}
       </div>
-      {error && <p className="mt-1.5 text-xs font-medium text-red-600">{error}</p>}
+      {error && <p className="mt-1.5 text-xs font-medium text-danger-600">{error}</p>}
     </div>
   );
 }
@@ -180,7 +180,7 @@ export function FormError({ message }: { message?: string | null }) {
   return (
     <p
       role="alert"
-      className="rounded-md border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-700"
+      className="rounded-md border border-danger-200 bg-danger-50 px-3.5 py-2.5 text-sm font-medium text-danger-700"
     >
       {message}
     </p>
@@ -207,10 +207,17 @@ export function SubmitButton({
   );
 }
 
-export function GoogleButton({ label }: { label: string }) {
+export function GoogleButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick?: () => void;
+}) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="flex w-full items-center justify-center gap-3 rounded-md border border-ink-200 bg-white px-5 py-2.5 text-sm font-semibold text-ink-800 shadow-sm transition-colors hover:bg-ink-50"
     >
       <GoogleIcon className="h-5 w-5" />

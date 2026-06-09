@@ -219,7 +219,7 @@ export default function AddressForm({
 
       <div className="sm:col-span-2">
         <span className={labelClass}>Address type</span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {TYPES.map((t) => (
             <button
               key={t.value}
@@ -249,7 +249,7 @@ export default function AddressForm({
         </label>
       )}
 
-      <div className="flex gap-3 sm:col-span-2">
+      <div className="flex flex-wrap gap-3 sm:col-span-2">
         <button
           type="submit"
           disabled={submitting}

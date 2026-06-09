@@ -174,7 +174,7 @@ export const HERO_SLIDES: HeroSlide[] = [
       label: "Buy Now",
       href: "#categories",
       Icon: ShoppingCart,
-      className: "bg-teal-600/55 ring-white/40 hover:bg-teal-600/75",
+      className: "bg-accent-600/55 ring-white/40 hover:bg-accent-600/75",
     },
   },
   {

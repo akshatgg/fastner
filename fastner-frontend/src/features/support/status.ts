@@ -2,9 +2,9 @@
 import type { TicketStatus } from "./types";
 
 const BADGES: Record<TicketStatus, { label: string; cls: string }> = {
-  open: { label: "Open", cls: "bg-amber-100 text-amber-700" },
-  in_progress: { label: "In progress", cls: "bg-blue-100 text-blue-700" },
-  resolved: { label: "Resolved", cls: "bg-green-100 text-green-700" },
+  open: { label: "Open", cls: "bg-warning-100 text-warning-700" },
+  in_progress: { label: "In progress", cls: "bg-info-100 text-info-700" },
+  resolved: { label: "Resolved", cls: "bg-success-100 text-success-700" },
   closed: { label: "Closed", cls: "bg-ink-200 text-ink-600" },
 };
 

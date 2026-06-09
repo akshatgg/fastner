@@ -45,7 +45,7 @@ export default function AdminCouponsPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-display text-2xl font-bold uppercase tracking-wide text-ink-900">
             Coupons
@@ -56,7 +56,7 @@ export default function AdminCouponsPage() {
         </div>
         <button
           onClick={() => setCreating(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600"
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600"
         >
           <Plus className="h-4 w-4" /> New coupon
         </button>
@@ -71,75 +71,77 @@ export default function AdminCouponsPage() {
             <p className="mt-3 text-sm text-ink-500">No coupons yet.</p>
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-ink-100 bg-ink-50/60 text-xs uppercase tracking-wide text-ink-500">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Code</th>
-                <th className="px-4 py-3 font-semibold">Discount</th>
-                <th className="hidden px-4 py-3 font-semibold sm:table-cell">Used</th>
-                <th className="hidden px-4 py-3 font-semibold md:table-cell">Expires</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ink-50">
-              {list.map((c) => (
-                <tr key={c.id} className="hover:bg-ink-50/40">
-                  <td className="px-4 py-3">
-                    <p className="font-bold text-ink-900">{c.code}</p>
-                    {c.min_order_amount != null && (
-                      <p className="text-xs text-ink-400">
-                        Min order {formatPrice(c.min_order_amount)}
-                      </p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-ink-700">{discountLabel(c)}</td>
-                  <td className="hidden px-4 py-3 text-ink-700 sm:table-cell">
-                    {c.used_count}
-                    {c.usage_limit != null ? ` / ${c.usage_limit}` : ""}
-                  </td>
-                  <td className="hidden px-4 py-3 text-ink-700 md:table-cell">
-                    {formatDate(c.expires_at)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() =>
-                        update.mutate({ id: c.id, input: { is_active: !c.is_active } })
-                      }
-                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
-                        c.is_active
-                          ? "bg-green-100 text-green-700"
-                          : "bg-ink-200 text-ink-600"
-                      }`}
-                      title="Click to toggle"
-                    >
-                      {c.is_active ? "Active" : "Disabled"}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1">
-                      <button
-                        onClick={() => setEditing(c)}
-                        className="rounded-lg p-1.5 text-ink-400 transition hover:bg-ink-50 hover:text-brand-600"
-                        aria-label="Edit"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete coupon ${c.code}?`)) del.mutate(c.id);
-                        }}
-                        className="rounded-lg p-1.5 text-ink-400 transition hover:bg-ink-50 hover:text-red-600"
-                        aria-label="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-ink-100 bg-ink-50/60 text-xs uppercase tracking-wide text-ink-500">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Code</th>
+                  <th className="px-4 py-3 font-semibold">Discount</th>
+                  <th className="hidden px-4 py-3 font-semibold sm:table-cell">Used</th>
+                  <th className="hidden px-4 py-3 font-semibold md:table-cell">Expires</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 text-right font-semibold">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-ink-50">
+                {list.map((c) => (
+                  <tr key={c.id} className="hover:bg-ink-50/40">
+                    <td className="px-4 py-3">
+                      <p className="font-bold text-ink-900">{c.code}</p>
+                      {c.min_order_amount != null && (
+                        <p className="whitespace-nowrap text-xs text-ink-400">
+                          Min order {formatPrice(c.min_order_amount)}
+                        </p>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-ink-700">{discountLabel(c)}</td>
+                    <td className="hidden whitespace-nowrap px-4 py-3 text-ink-700 sm:table-cell">
+                      {c.used_count}
+                      {c.usage_limit != null ? ` / ${c.usage_limit}` : ""}
+                    </td>
+                    <td className="hidden whitespace-nowrap px-4 py-3 text-ink-700 md:table-cell">
+                      {formatDate(c.expires_at)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() =>
+                          update.mutate({ id: c.id, input: { is_active: !c.is_active } })
+                        }
+                        className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
+                          c.is_active
+                            ? "bg-success-100 text-success-700"
+                            : "bg-ink-200 text-ink-600"
+                        }`}
+                        title="Click to toggle"
+                      >
+                        {c.is_active ? "Active" : "Disabled"}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => setEditing(c)}
+                          className="rounded-lg p-1.5 text-ink-400 transition hover:bg-ink-50 hover:text-brand-600"
+                          aria-label="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete coupon ${c.code}?`)) del.mutate(c.id);
+                          }}
+                          className="rounded-lg p-1.5 text-ink-400 transition hover:bg-ink-50 hover:text-danger-600"
+                          aria-label="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -227,7 +229,7 @@ function CouponForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className={labelCls}>Code *</label>
           <input
@@ -261,7 +263,7 @@ function CouponForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className={labelCls}>
             {discountType === "percent" ? "Discount (%)" : "Discount (₹)"} *
@@ -292,7 +294,7 @@ function CouponForm({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className={labelCls}>Min order (₹)</label>
           <input

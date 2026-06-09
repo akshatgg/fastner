@@ -1,6 +1,7 @@
 """Auth helper methods: password hashing and JWT / refresh-token handling."""
 
 import hashlib
+import logging
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -10,6 +11,8 @@ import jwt
 
 from app.core.config import settings
 from app.utils.email import send_email
+
+logger = logging.getLogger(__name__)
 
 
 # --- Password hashing ---------------------------------------------------------
@@ -47,6 +50,35 @@ def decode_access_token(token: str) -> dict:
     return jwt.decode(
         token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
     )
+
+
+# --- Google Sign-In (ID-token verification) -----------------------------------
+
+# Google's published JWKS (rotating RSA public keys) used to verify the RS256
+# signature on a Sign-In ID token. PyJWKClient fetches the keys on first use and
+# caches them, so this is created once at import.
+_GOOGLE_CERTS_URL = "https://www.googleapis.com/oauth2/v3/certs"
+_GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
+_google_jwk_client = jwt.PyJWKClient(_GOOGLE_CERTS_URL)
+
+
+def verify_google_id_token(credential: str) -> dict:
+    """Verify a Google Sign-In ID token (JWT) and return its claims.
+
+    Validates the RS256 signature against Google's public keys, the audience
+    (our OAuth client ID) and the expiry, then confirms the issuer. Raises a jwt
+    exception on any failure (bad signature, wrong audience, expired, untrusted
+    issuer) — the caller turns that into a 401."""
+    signing_key = _google_jwk_client.get_signing_key_from_jwt(credential)
+    claims = jwt.decode(
+        credential,
+        signing_key.key,
+        algorithms=["RS256"],
+        audience=settings.GOOGLE_CLIENT_ID,
+    )
+    if claims.get("iss") not in _GOOGLE_ISSUERS:
+        raise jwt.InvalidIssuerError("Untrusted Google token issuer.")
+    return claims
 
 
 # --- Refresh tokens (opaque, DB-backed) ---------------------------------------
@@ -135,6 +167,7 @@ def send_verification_email(email: str, full_name: str, raw_token: str) -> None:
         f"This link expires in {hours} hours. If you didn't create this account, "
         "you can ignore this email."
     )
+    logger.info("Sending verification email to %s", email)
     send_email(to=email, subject=subject, html_body=html_body, text_body=text_body)
 
 
@@ -170,4 +203,5 @@ def send_password_reset_email(email: str, full_name: str, raw_token: str) -> Non
         f"This link expires in {hours} hours. If you didn't request a reset, you "
         "can ignore this email — your password won't change."
     )
+    logger.info("Sending password-reset email to %s", email)
     send_email(to=email, subject=subject, html_body=html_body, text_body=text_body)

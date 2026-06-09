@@ -141,8 +141,8 @@ function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
               value={confirm}
               onChange={setConfirm}
             />
-            {error && <p className="text-sm font-medium text-red-600">{error}</p>}
-            <div className="flex gap-2 pt-1">
+            {error && <p className="text-sm font-medium text-danger-600">{error}</p>}
+            <div className="flex flex-wrap gap-2 pt-1">
               <button
                 type="submit"
                 disabled={changePassword.isPending || !current || !next || !confirm}
@@ -181,9 +181,9 @@ function DangerZone({ hasPassword }: { hasPassword: boolean }) {
   };
 
   return (
-    <div className="mt-8 rounded-2xl border border-red-200 bg-red-50/40 p-6 shadow-card sm:p-8">
+    <div className="mt-8 rounded-2xl border border-danger-200 bg-danger-50/40 p-6 shadow-card sm:p-8">
       <div className="flex items-start gap-4">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-danger-100 text-danger-600">
           <Trash2 className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
@@ -197,14 +197,14 @@ function DangerZone({ hasPassword }: { hasPassword: boolean }) {
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="mt-3 inline-flex items-center gap-2 rounded-md border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+              className="mt-3 inline-flex items-center gap-2 rounded-md border border-danger-300 px-4 py-2 text-sm font-semibold text-danger-600 transition hover:bg-danger-50"
             >
               <Trash2 className="h-4 w-4" />
               Delete account
             </button>
           ) : (
             <form onSubmit={submit} className="mt-4 max-w-sm space-y-3">
-              <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-white p-3 text-sm text-red-700">
+              <div className="flex items-start gap-2 rounded-lg border border-danger-200 bg-white p-3 text-sm text-danger-700">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
                   This is permanent. Your orders, addresses, reviews and saved
@@ -222,11 +222,11 @@ function DangerZone({ hasPassword }: { hasPassword: boolean }) {
                   className={inputCls}
                 />
               )}
-              <div className="flex gap-2 pt-1">
+              <div className="flex flex-wrap gap-2 pt-1">
                 <button
                   type="submit"
                   disabled={deleteAccount.isPending || (hasPassword && !password)}
-                  className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-md bg-danger-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-danger-700 disabled:opacity-50"
                 >
                   {deleteAccount.isPending ? "Deleting…" : "Yes, delete my account"}
                 </button>

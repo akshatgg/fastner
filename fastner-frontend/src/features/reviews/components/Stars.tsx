@@ -19,7 +19,7 @@ export function Stars({
         <Star
           key={star}
           className={`${cls} ${
-            star <= rounded ? "fill-amber-400 text-amber-400" : "text-ink-200"
+            star <= rounded ? "fill-warning-400 text-warning-400" : "text-ink-200"
           }`}
         />
       ))}
@@ -51,7 +51,7 @@ export function StarPicker({
           <Star
             className={`h-7 w-7 transition-colors ${
               star <= (hover || value)
-                ? "fill-amber-400 text-amber-400"
+                ? "fill-warning-400 text-warning-400"
                 : "text-ink-300"
             }`}
           />

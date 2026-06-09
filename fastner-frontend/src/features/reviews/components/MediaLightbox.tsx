@@ -72,20 +72,23 @@ export default function MediaLightbox({
         </>
       )}
 
-      <div className="max-h-[85vh] max-w-4xl" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="max-h-[85vh] w-full max-w-4xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {current.type === "video" ? (
           <video
             src={current.url}
             controls
             autoPlay
-            className="max-h-[85vh] max-w-full rounded-lg"
+            className="mx-auto max-h-[85vh] max-w-full rounded-lg"
           />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={current.url}
             alt=""
-            className="max-h-[85vh] max-w-full rounded-lg object-contain"
+            className="mx-auto max-h-[85vh] max-w-full rounded-lg object-contain"
           />
         )}
       </div>

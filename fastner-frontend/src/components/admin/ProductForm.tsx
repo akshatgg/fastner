@@ -133,7 +133,7 @@ export default function ProductForm({
         <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className={labelCls}>SKU</label>
           <input className={inputCls} value={sku} onChange={(e) => setSku(e.target.value)} />
@@ -150,7 +150,7 @@ export default function ProductForm({
       </div>
 
       {/* Pricing — same product, retail vs bulk rate */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <label className={labelCls}>B2C price (₹)</label>
           <input
@@ -225,7 +225,7 @@ export default function ProductForm({
                 }
               />
               <button type="button" onClick={() => setSpecs((s) => s.filter((_, j) => j !== i))}
-                className="shrink-0 rounded-lg px-2 text-ink-400 hover:bg-ink-50 hover:text-red-600">
+                className="shrink-0 rounded-lg px-2 text-ink-400 hover:bg-ink-50 hover:text-danger-600">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
@@ -252,7 +252,7 @@ export default function ProductForm({
                 />
               </div>
               <button type="button" onClick={() => setImages((s) => s.filter((_, j) => j !== i))}
-                className="shrink-0 rounded-lg px-2 py-2 text-ink-400 hover:bg-ink-50 hover:text-red-600">
+                className="shrink-0 rounded-lg px-2 py-2 text-ink-400 hover:bg-ink-50 hover:text-danger-600">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>

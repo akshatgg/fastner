@@ -25,7 +25,7 @@ function ResetPasswordContent() {
     return (
       <AuthShell>
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-600">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-danger-50 text-danger-600">
             <XCircle className="h-7 w-7" />
           </span>
         </div>

@@ -30,6 +30,49 @@
   --color-ink-900: #1c1c1c;
   --color-ink-950: #121212;
 
+  /* ---------------------------------------------------------------- *
+   * Semantic status palette — the single home for status/feedback
+   * colours. Use these via bg-/text-/border-/ring- utilities instead of
+   * raw Tailwind palette classes (bg-red-600, text-green-700, …) so every
+   * status colour is declared here and reused, never hardcoded per file.
+   *   success → delivered / paid / resolved / positive
+   *   warning → pending / in-review / ratings / caution
+   *   danger  → declined / errors / destructive actions
+   *   info    → approved / shipped / in-progress / neutral-active
+   *   royal   → superadmin role badge
+   *   accent  → secondary brand accent (e.g. hero "Buy now" on silver art)
+   * ---------------------------------------------------------------- */
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+
+  --color-warning-100: #fef3c7;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+  --color-danger-800: #991b1b;
+
+  --color-info-100: #dbeafe;
+  --color-info-700: #1d4ed8;
+
+  --color-royal-50: #faf5ff;
+  --color-royal-700: #7e22ce;
+
+  --color-accent-600: #0d9488;
+
   --color-background: #ffffff;
   --color-foreground: #1c1c1c;
 

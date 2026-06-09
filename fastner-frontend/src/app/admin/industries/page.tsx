@@ -59,7 +59,7 @@ export default function IndustriesPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="font-display text-2xl font-bold uppercase text-ink-900">
             Industries
@@ -181,7 +181,7 @@ function IndustryRow({
         )}
       </div>
 
-      <div className="ml-auto flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+      <div className="ml-auto flex items-center gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
         <button
           title="Edit"
           onClick={onEdit}
@@ -195,7 +195,7 @@ function IndustryRow({
             if (confirm(`Delete “${industry.name}”? This can't be undone.`))
               del.mutate(industry.id);
           }}
-          className="rounded-md p-1.5 text-ink-400 transition hover:bg-ink-50 hover:text-red-600"
+          className="rounded-md p-1.5 text-ink-400 transition hover:bg-ink-50 hover:text-danger-600"
         >
           <Trash2 className="h-4 w-4" />
         </button>

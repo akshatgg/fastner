@@ -8,10 +8,10 @@ import {
   AuthField,
   FormError,
   SubmitButton,
-  GoogleButton,
   Divider,
   Checkbox,
 } from "@/components/auth/AuthUI";
+import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 import { ApiError } from "@/lib/api/client";
 import { useSignup, useRedirectIfAuthenticated } from "@/features/auth/queries";
 
@@ -58,7 +58,7 @@ export default function SignUpPage() {
         subtitle="Order fasteners, track shipments and request bulk quotes."
       />
 
-      <GoogleButton label="Sign up with Google" />
+      <GoogleSignInButton text="signup_with" fallbackLabel="Sign up with Google" />
       <Divider label="or sign up with email" />
 
       <form className="space-y-4" onSubmit={handleSubmit}>

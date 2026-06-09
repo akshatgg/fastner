@@ -109,7 +109,7 @@ export default function WriteReviewModal({
           <ReviewMediaUploader value={media} onChange={setMedia} />
         </div>
 
-        <div className="mt-6 flex items-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
             type="submit"
             disabled={rating < 1 || submit.isPending}

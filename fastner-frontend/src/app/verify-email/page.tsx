@@ -26,17 +26,17 @@ function VerifyEmailContent() {
 
   if (!token) {
     icon = <XCircle className="h-7 w-7" />;
-    tone = "bg-red-50 text-red-600";
+    tone = "bg-danger-50 text-danger-600";
     title = "Missing verification token";
     subtitle = "This link looks incomplete. Please use the button in your email.";
   } else if (verify.isSuccess) {
     icon = <CheckCircle2 className="h-7 w-7" />;
-    tone = "bg-green-50 text-green-600";
+    tone = "bg-success-50 text-success-600";
     title = "Email verified";
     subtitle = "Your account is active. You can now sign in.";
   } else if (verify.isError) {
     icon = <XCircle className="h-7 w-7" />;
-    tone = "bg-red-50 text-red-600";
+    tone = "bg-danger-50 text-danger-600";
     title = "Verification failed";
     subtitle =
       "This link is invalid or has expired. Request a new one from the sign-in page.";

@@ -97,7 +97,7 @@ export default function ImageUpload({
             <button
               type="button"
               onClick={() => onChange("")}
-              className="inline-flex w-fit items-center gap-1 text-xs text-ink-400 transition hover:text-red-600"
+              className="inline-flex w-fit items-center gap-1 text-xs text-ink-400 transition hover:text-danger-600"
             >
               <X className="h-3 w-3" /> Remove
             </button>

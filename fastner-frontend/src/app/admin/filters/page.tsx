@@ -107,7 +107,7 @@ function GroupCard({ group }: { group: FilterGroupWithValues }) {
             if (confirm(`Delete the “${group.name}” group and all its values?`))
               deleteGroup.mutate(group.id);
           }}
-          className="rounded-md p-1.5 text-ink-400 transition hover:bg-ink-50 hover:text-red-600"
+          className="rounded-md p-1.5 text-ink-400 transition hover:bg-ink-50 hover:text-danger-600"
           title="Delete group"
         >
           <Trash2 className="h-4 w-4" />
@@ -126,7 +126,7 @@ function GroupCard({ group }: { group: FilterGroupWithValues }) {
             {v.value}
             <button
               onClick={() => deleteValue.mutate(v.id)}
-              className="rounded-full p-0.5 text-ink-300 hover:bg-ink-50 hover:text-red-600"
+              className="rounded-full p-0.5 text-ink-300 hover:bg-ink-50 hover:text-danger-600"
               title="Remove value"
             >
               <Trash2 className="h-3.5 w-3.5" />

@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, status
@@ -8,6 +9,7 @@ from app.auth.schemas import (
     ChangePasswordRequest,
     DeleteAccountRequest,
     ForgotPasswordRequest,
+    GoogleAuthRequest,
     MessageResponse,
     ProfileUpdate,
     RefreshRequest,
@@ -24,6 +26,8 @@ from app.auth.schemas import (
 from app.auth.service import AuthService
 from app.core.database import get_db
 from app.utils.dependencies import get_current_user, require_role
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -78,6 +82,12 @@ def reset_password(
 @router.post("/login", response_model=TokenResponse)
 def login(data: SignInRequest, db: Session = Depends(get_db)) -> TokenResponse:
     return AuthService(db).authenticate(data)
+
+
+@router.post("/google", response_model=TokenResponse)
+def google_login(data: GoogleAuthRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    """Sign in or register with a Google ID token (Google Sign-In)."""
+    return AuthService(db).authenticate_google(data.credential)
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -139,4 +149,10 @@ def update_user_role(
     actor: User = Depends(require_role("admin", "superadmin")),
     db: Session = Depends(get_db),
 ) -> User:
+    logger.info(
+        "Admin %s requested role change for user %s -> %s",
+        actor.id,
+        user_id,
+        data.role,
+    )
     return AuthService(db).set_user_role(actor, user_id, data.role)

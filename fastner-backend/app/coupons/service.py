@@ -7,6 +7,7 @@ gate every redemption path goes through (cart preview, Razorpay amount, and the
 final order placement) so the rules can't drift between them.
 """
 
+import logging
 import uuid
 from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
@@ -17,6 +18,8 @@ from sqlalchemy.orm import Session
 
 from app.coupons import schemas
 from app.coupons.models import DISCOUNT_TYPES, Coupon
+
+logger = logging.getLogger(__name__)
 
 _TWO_PLACES = Decimal("0.01")
 
@@ -52,10 +55,27 @@ class CouponService:
             select(Coupon).where(Coupon.code == normalize_code(code))
         )
         if coupon is None or not coupon.is_active:
+            logger.warning(
+                "Coupon validation failed: code=%s invalid or inactive.",
+                normalize_code(code),
+            )
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid coupon code.")
         if coupon.expires_at is not None and datetime.now(timezone.utc) > coupon.expires_at:
+            logger.warning(
+                "Coupon validation failed: coupon=%s code=%s has expired.",
+                coupon.id,
+                coupon.code,
+            )
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "This coupon has expired.")
         if coupon.usage_limit is not None and coupon.used_count >= coupon.usage_limit:
+            logger.warning(
+                "Coupon validation failed: coupon=%s code=%s usage limit reached "
+                "(%d/%d).",
+                coupon.id,
+                coupon.code,
+                coupon.used_count,
+                coupon.usage_limit,
+            )
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
                 "This coupon has reached its usage limit.",
@@ -64,6 +84,14 @@ class CouponService:
             coupon.min_order_amount is not None
             and Decimal(subtotal) < Decimal(coupon.min_order_amount)
         ):
+            logger.warning(
+                "Coupon validation failed: coupon=%s code=%s min order not met "
+                "(subtotal=%s < min=%s).",
+                coupon.id,
+                coupon.code,
+                subtotal,
+                coupon.min_order_amount,
+            )
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
                 f"Add ₹{coupon.min_order_amount:.2f} of items to use this coupon.",
@@ -73,6 +101,13 @@ class CouponService:
     def preview(self, code: str, subtotal: Decimal) -> schemas.CouponPreview:
         coupon = self.validate_for_subtotal(code, subtotal)
         discount = self.compute_discount(coupon, subtotal)
+        logger.info(
+            "Coupon applied to cart: coupon=%s code=%s subtotal=%s discount=%s",
+            coupon.id,
+            coupon.code,
+            subtotal,
+            discount,
+        )
         return schemas.CouponPreview(
             code=coupon.code,
             discount_type=coupon.discount_type,
@@ -127,6 +162,7 @@ class CouponService:
         self.db.add(coupon)
         self.db.commit()
         self.db.refresh(coupon)
+        logger.info("Coupon created: coupon=%s code=%s", coupon.id, coupon.code)
         return coupon
 
     def update_coupon(
@@ -166,20 +202,39 @@ class CouponService:
 
         self.db.commit()
         self.db.refresh(coupon)
+        logger.info(
+            "Coupon updated: coupon=%s code=%s fields=%s",
+            coupon.id,
+            coupon.code,
+            sorted(fields.keys()),
+        )
         return coupon
 
     def delete_coupon(self, coupon_id: uuid.UUID) -> None:
         coupon = self.get_coupon(coupon_id)
         self.db.delete(coupon)
         self.db.commit()
+        logger.info("Coupon deleted: coupon=%s code=%s", coupon_id, coupon.code)
 
     # --- redemption bookkeeping ---------------------------------------------
 
     def increment_usage(self, coupon: Coupon) -> None:
         coupon.used_count = (coupon.used_count or 0) + 1
+        logger.info(
+            "Coupon redeemed on order: coupon=%s code=%s used_count=%d",
+            coupon.id,
+            coupon.code,
+            coupon.used_count,
+        )
 
     def release_usage(self, coupon_id: uuid.UUID) -> None:
         """Free a redemption back up (e.g. when an order is declined/cancelled)."""
         coupon = self.db.get(Coupon, coupon_id)
         if coupon is not None and coupon.used_count > 0:
             coupon.used_count -= 1
+            logger.info(
+                "Coupon redemption released: coupon=%s code=%s used_count=%d",
+                coupon.id,
+                coupon.code,
+                coupon.used_count,
+            )

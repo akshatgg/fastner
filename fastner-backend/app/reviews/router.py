@@ -5,6 +5,8 @@
   * ``POST /reviews/products/{slug}``              — submit/update a review (buyers only)
 """
 
+import logging
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
@@ -13,6 +15,8 @@ from app.core.database import get_db
 from app.reviews import schemas
 from app.reviews.service import ReviewService
 from app.utils.dependencies import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
@@ -47,4 +51,5 @@ def submit_review(
     db: Session = Depends(get_db),
 ):
     """Create or update the signed-in buyer's review for this product."""
+    logger.info("Review submit requested by user=%s for product slug=%s", user.id, slug)
     return ReviewService(db).submit_review(user, slug, data)

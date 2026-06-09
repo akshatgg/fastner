@@ -8,6 +8,7 @@ Invariants enforced here (not by the DB):
   * exactly one of a product's category links is ``is_primary``.
 """
 
+import logging
 import uuid
 from collections import defaultdict
 
@@ -27,6 +28,8 @@ from app.catalog.models import (
 )
 from app.industries.models import Industry
 from app.catalog import schemas
+
+logger = logging.getLogger(__name__)
 
 
 class CatalogService:
@@ -88,6 +91,9 @@ class CatalogService:
         self.db.add(cat)
         self.db.commit()
         self.db.refresh(cat)
+        logger.info(
+            "Category created: id=%s slug=%s path=%s", cat.id, cat.slug, cat.path
+        )
         return cat
 
     def update_category(
@@ -129,6 +135,14 @@ class CatalogService:
 
         self.db.commit()
         self.db.refresh(cat)
+        logger.info(
+            "Category updated: id=%s slug=%s path=%s (moved=%s, renamed=%s)",
+            cat.id,
+            cat.slug,
+            cat.path,
+            moving,
+            renaming,
+        )
         return cat
 
     def _recompute_subtree(self, cat: Category) -> None:
@@ -151,6 +165,9 @@ class CatalogService:
     def delete_category(self, category_id: uuid.UUID) -> None:
         cat = self._get_category(category_id)
         if self._has_children(category_id):
+            logger.warning(
+                "Category delete rejected: id=%s still has children", category_id
+            )
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
                 "Delete or move the subcategories first — this category still has children.",
@@ -158,6 +175,7 @@ class CatalogService:
         # Any product links cascade away; the products themselves remain.
         self.db.delete(cat)
         self.db.commit()
+        logger.info("Category deleted: id=%s slug=%s", category_id, cat.slug)
 
     def get_category(self, category_id: uuid.UUID) -> Category:
         return self._get_category(category_id)
@@ -213,6 +231,7 @@ class CatalogService:
         self.db.add(group)
         self.db.commit()
         self.db.refresh(group)
+        logger.info("Filter group created: id=%s slug=%s", group.id, group.slug)
         return group
 
     def update_filter_group(
@@ -237,6 +256,7 @@ class CatalogService:
                 setattr(group, key, fields[key])
         self.db.commit()
         self.db.refresh(group)
+        logger.info("Filter group updated: id=%s slug=%s", group.id, group.slug)
         return group
 
     def delete_filter_group(self, group_id: uuid.UUID) -> None:
@@ -245,6 +265,7 @@ class CatalogService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Filter group not found.")
         self.db.delete(group)  # values + product links cascade
         self.db.commit()
+        logger.info("Filter group deleted: id=%s slug=%s", group_id, group.slug)
 
     def list_filter_groups(self) -> list[FilterGroup]:
         return list(
@@ -273,6 +294,12 @@ class CatalogService:
         self.db.add(value)
         self.db.commit()
         self.db.refresh(value)
+        logger.info(
+            "Filter value created: id=%s slug=%s group=%s",
+            value.id,
+            value.slug,
+            value.filter_group_id,
+        )
         return value
 
     def update_filter_value(
@@ -299,6 +326,7 @@ class CatalogService:
                 setattr(value, key, fields[key])
         self.db.commit()
         self.db.refresh(value)
+        logger.info("Filter value updated: id=%s slug=%s", value.id, value.slug)
         return value
 
     def delete_filter_value(self, value_id: uuid.UUID) -> None:
@@ -307,6 +335,7 @@ class CatalogService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Filter value not found.")
         self.db.delete(value)
         self.db.commit()
+        logger.info("Filter value deleted: id=%s slug=%s", value_id, value.slug)
 
     # --- products ------------------------------------------------------------
 
@@ -393,6 +422,9 @@ class CatalogService:
         self._set_industry_links(product, data.industry_ids)
         self.db.commit()
         self.db.refresh(product)
+        logger.info(
+            "Product created: id=%s slug=%s sku=%s", product.id, product.slug, product.sku
+        )
         return product
 
     def update_product(
@@ -449,6 +481,9 @@ class CatalogService:
 
         self.db.commit()
         self.db.refresh(product)
+        logger.info(
+            "Product updated: id=%s slug=%s sku=%s", product.id, product.slug, product.sku
+        )
         return product
 
     def delete_product(self, product_id: uuid.UUID) -> None:
@@ -457,6 +492,7 @@ class CatalogService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Product not found.")
         self.db.delete(product)
         self.db.commit()
+        logger.info("Product deleted: id=%s slug=%s", product_id, product.slug)
 
     def reorder_products(self, product_ids: list[uuid.UUID]) -> None:
         """Assign ``position`` = list index for each product, in the given order."""
@@ -465,6 +501,7 @@ class CatalogService:
             if product is not None:
                 product.position = pos
         self.db.commit()
+        logger.info("Product order persisted: %d products reordered", len(product_ids))
 
     def get_product(self, product_id: uuid.UUID) -> Product:
         product = self.db.get(Product, product_id)

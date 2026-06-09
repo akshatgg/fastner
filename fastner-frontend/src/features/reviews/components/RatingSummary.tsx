@@ -33,7 +33,7 @@ export default function RatingSummary({
       ) : (
         <>
           {/* Average + stars, inline like Amazon */}
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <Stars value={average} size="md" />
             <span className="text-sm font-medium text-ink-700">
               {average.toFixed(1)} out of 5
@@ -58,7 +58,7 @@ export default function RatingSummary({
                   </span>
                   <span className="h-5 flex-1 overflow-hidden rounded-sm border border-ink-200 bg-ink-50">
                     <span
-                      className="block h-full bg-amber-400 transition-all"
+                      className="block h-full bg-warning-400 transition-all"
                       style={{ width: `${percent}%` }}
                     />
                   </span>

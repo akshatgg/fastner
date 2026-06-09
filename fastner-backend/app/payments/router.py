@@ -8,6 +8,7 @@ The order amount is always computed server-side from the user's cart — the
 client never gets to name its own price.
 """
 
+import logging
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -26,6 +27,8 @@ from app.payments.service import (
 )
 from app.settings.service import SettingsService
 from app.utils.dependencies import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -66,6 +69,9 @@ def create_razorpay_order(
     _discount, _tax, total = compute_money(subtotal, raw_discount, gst_rate)
     amount_paise = int((total * 100).to_integral_value())
     # Razorpay caps receipt at 40 chars — the dashless hex (5 + 32 = 37) fits.
+    logger.info(
+        "Creating Razorpay order for user=%s (amount_paise=%s)", user.id, amount_paise
+    )
     order = RazorpayService().create_order(
         amount_paise, receipt=f"cart-{user.id.hex}"
     )

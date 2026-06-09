@@ -33,6 +33,7 @@ def _shell(title: str, body_html: str) -> str:
 def _send(user: User, subject: str, html: str) -> None:
     try:
         send_email(to=user.email, subject=subject, html_body=html)
+        logger.info("Sent support email %r to %s", subject, user.email)
     except Exception:  # noqa: BLE001 — email is best-effort
         logger.exception("Failed to send support email %r to %s", subject, user.email)
 

@@ -81,7 +81,7 @@ export default function SearchOverlay({
         onClick={onClose}
       />
 
-      <div className="relative mx-auto mt-20 w-full max-w-3xl px-4">
+      <div className="relative mx-auto mt-16 w-full max-w-3xl px-4 sm:mt-20">
         {/* Search field */}
         <form
           onSubmit={(e) => {

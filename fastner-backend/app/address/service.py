@@ -6,6 +6,7 @@ flag on every other address owned by the same user. The first address a user
 saves is forced to be the default so checkout always has something selected.
 """
 
+import logging
 import uuid
 
 from fastapi import HTTPException, status
@@ -14,6 +15,8 @@ from sqlalchemy.orm import Session
 
 from app.address import schemas
 from app.address.models import Address
+
+logger = logging.getLogger(__name__)
 
 
 class AddressService:
@@ -35,6 +38,9 @@ class AddressService:
     def _get_owned(self, user_id: uuid.UUID, address_id: uuid.UUID) -> Address:
         address = self.db.get(Address, address_id)
         if address is None or address.user_id != user_id:
+            logger.warning(
+                "Address not found for user=%s address=%s.", user_id, address_id
+            )
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Address not found.")
         return address
 
@@ -67,6 +73,14 @@ class AddressService:
         self.db.add(address)
         self.db.commit()
         self.db.refresh(address)
+        logger.info(
+            "Address created: user=%s address=%s city=%s pincode=%s default=%s",
+            user_id,
+            address.id,
+            address.city,
+            address.pincode,
+            address.is_default,
+        )
         return address
 
     def update(
@@ -79,6 +93,14 @@ class AddressService:
             self._clear_other_defaults(user_id, keep_id=address.id)
         self.db.commit()
         self.db.refresh(address)
+        logger.info(
+            "Address updated: user=%s address=%s city=%s pincode=%s default=%s",
+            user_id,
+            address.id,
+            address.city,
+            address.pincode,
+            address.is_default,
+        )
         return address
 
     def set_default(self, user_id: uuid.UUID, address_id: uuid.UUID) -> Address:
@@ -87,6 +109,9 @@ class AddressService:
         address.is_default = True
         self.db.commit()
         self.db.refresh(address)
+        logger.info(
+            "Default address changed: user=%s address=%s", user_id, address.id
+        )
         return address
 
     def delete(self, user_id: uuid.UUID, address_id: uuid.UUID) -> None:
@@ -104,4 +129,15 @@ class AddressService:
             )
             if fallback is not None:
                 fallback.is_default = True
+                logger.info(
+                    "Default address promoted after delete: user=%s address=%s",
+                    user_id,
+                    fallback.id,
+                )
         self.db.commit()
+        logger.info(
+            "Address deleted: user=%s address=%s was_default=%s",
+            user_id,
+            address_id,
+            was_default,
+        )

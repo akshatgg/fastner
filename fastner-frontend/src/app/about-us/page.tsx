@@ -23,15 +23,15 @@ export default function AboutUsPage() {
         {/* Hero */}
         <section className="relative overflow-hidden bg-ink-950 text-white">
           <HexNut className="pointer-events-none absolute -right-20 -top-16 h-[26rem] w-[26rem] rotate-12 text-white/[0.04]" />
-          <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+          <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
             <span className="mb-3 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-brand-400">
               <span className="h-px w-6 bg-brand-500" />
               About {SITE.name}
             </span>
-            <h1 className="max-w-3xl font-display text-4xl font-bold uppercase leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="max-w-3xl font-display text-3xl font-bold uppercase leading-tight tracking-tight sm:text-5xl lg:text-6xl">
               Your trusted source for quality fasteners
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-300">
+            <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-300 sm:text-lg">
               IBC supplies genuine, quality-assured industrial fasteners and
               tools to manufacturers, builders and workshops. We make sourcing
               the right fastener simple — backed by deep stock, trusted brands

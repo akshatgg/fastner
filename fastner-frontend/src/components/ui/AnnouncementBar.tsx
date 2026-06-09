@@ -26,7 +26,7 @@ export default function AnnouncementBar() {
 
   return (
     <div
-      className="relative flex items-center justify-center border-b border-white/10 bg-ink-950 px-12 py-2.5 text-white"
+      className="relative flex items-center justify-center border-b border-white/10 bg-ink-950 px-10 py-2.5 text-white sm:px-12"
       role="region"
       aria-label="Announcements"
       aria-live="polite"

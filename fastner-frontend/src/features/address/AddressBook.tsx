@@ -127,7 +127,7 @@ export default function AddressBook() {
                   )}
                 </div>
 
-                <div className="flex shrink-0 items-center gap-1">
+                <div className="flex shrink-0 flex-wrap items-center gap-1">
                   {!a.is_default && (
                     <button
                       onClick={() => setDefault.mutate(a.id)}
@@ -148,7 +148,7 @@ export default function AddressBook() {
                     onClick={() => {
                       if (confirm("Delete this address?")) remove.mutate(a.id);
                     }}
-                    className="rounded-md p-2 text-ink-400 transition hover:bg-ink-50 hover:text-red-600"
+                    className="rounded-md p-2 text-ink-400 transition hover:bg-ink-50 hover:text-danger-600"
                     aria-label="Delete address"
                   >
                     <Trash2 className="h-4 w-4" />

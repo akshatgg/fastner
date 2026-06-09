@@ -17,6 +17,13 @@ class SignInRequest(BaseModel):
     password: str
 
 
+class GoogleAuthRequest(BaseModel):
+    """A Google Sign-In ID token (the JWT ``credential`` returned by Google
+    Identity Services in the browser), exchanged here for our own session."""
+
+    credential: str = Field(min_length=1)
+
+
 class ProfileUpdate(BaseModel):
     """Self-service profile edits. Only fields the user is allowed to change —
     email/role/verification are intentionally not editable here."""

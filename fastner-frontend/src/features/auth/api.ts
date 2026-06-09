@@ -56,6 +56,14 @@ export const loginRequest = (input: SignInInput) =>
     auth: false,
   });
 
+/** Exchange a Google ID token (credential) for our own session token pair. */
+export const googleLoginRequest = (credential: string) =>
+  apiFetch<TokenResponse>("/auth/google", {
+    method: "POST",
+    body: { credential },
+    auth: false,
+  });
+
 export const meRequest = () => apiFetch<User>("/auth/me");
 
 export const updateProfileRequest = (input: ProfileUpdateInput) =>

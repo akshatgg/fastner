@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
     return (
       <AuthShell>
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-50 text-green-600">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-success-50 text-success-600">
             <MailCheck className="h-7 w-7" />
           </span>
         </div>

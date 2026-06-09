@@ -5,6 +5,7 @@
 # to this class's own ``list()`` method instead of the builtin.
 from __future__ import annotations
 
+import logging
 import uuid
 
 from fastapi import HTTPException, status
@@ -14,6 +15,8 @@ from sqlalchemy.orm import Session
 from app.catalog.helpers import slugify
 from app.industries.models import Industry
 from app.industries import schemas
+
+logger = logging.getLogger(__name__)
 
 
 class IndustryService:
@@ -60,6 +63,7 @@ class IndustryService:
         self.db.add(industry)
         self.db.commit()
         self.db.refresh(industry)
+        logger.info("Industry created id=%s slug=%s", industry.id, industry.slug)
         return industry
 
     def update(
@@ -78,12 +82,14 @@ class IndustryService:
 
         self.db.commit()
         self.db.refresh(industry)
+        logger.info("Industry updated id=%s slug=%s", industry.id, industry.slug)
         return industry
 
     def delete(self, industry_id: uuid.UUID) -> None:
         industry = self._get(industry_id)
         self.db.delete(industry)
         self.db.commit()
+        logger.info("Industry deleted id=%s", industry_id)
 
     def reorder(self, industry_ids: list[uuid.UUID]) -> None:
         """Assign ``position`` = list index for each industry, in the given order."""
@@ -92,3 +98,4 @@ class IndustryService:
             if industry is not None:
                 industry.position = pos
         self.db.commit()
+        logger.info("Industries reordered count=%d", len(industry_ids))

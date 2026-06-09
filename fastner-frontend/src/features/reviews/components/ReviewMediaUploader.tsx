@@ -63,7 +63,7 @@ export default function ReviewMediaUploader({
               type="button"
               onClick={() => onChange(value.filter((_, idx) => idx !== i))}
               aria-label="Remove"
-              className="absolute -right-1.5 -top-1.5 rounded-full bg-ink-900 p-0.5 text-white shadow transition hover:bg-red-600"
+              className="absolute -right-1.5 -top-1.5 rounded-full bg-ink-900 p-0.5 text-white shadow transition hover:bg-danger-600"
             >
               <X className="h-3 w-3" />
             </button>

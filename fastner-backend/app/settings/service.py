@@ -6,12 +6,15 @@ to :data:`DEFAULT_GST_RATE` when the row is absent so the feature works before a
 admin ever touches it.
 """
 
+import logging
 from decimal import Decimal, InvalidOperation
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.settings.models import StoreSetting
+
+logger = logging.getLogger(__name__)
 
 GST_RATE_KEY = "gst_rate"
 # Standard Indian GST on fasteners; admin-overridable from the dashboard.
@@ -51,4 +54,5 @@ class SettingsService:
         # Normalise to 2 decimal places for a clean, predictable stored value.
         normalised = Decimal(rate).quantize(Decimal("0.01"))
         self._set(GST_RATE_KEY, str(normalised))
+        logger.info("Store setting updated key=%s value=%s", GST_RATE_KEY, normalised)
         return normalised

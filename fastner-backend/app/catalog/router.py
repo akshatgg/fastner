@@ -5,6 +5,7 @@ Two routers:
   * ``public_router`` (/catalog) — read-only storefront endpoints.
 """
 
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
@@ -15,6 +16,8 @@ from app.catalog import schemas
 from app.catalog.service import CatalogService
 from app.core.database import get_db
 from app.utils.dependencies import require_role
+
+logger = logging.getLogger(__name__)
 
 admin_router = APIRouter(
     prefix="/admin/catalog",
@@ -68,6 +71,7 @@ def update_category(
 
 @admin_router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_category(category_id: uuid.UUID, db: Session = Depends(get_db)):
+    logger.info("Admin delete category id=%s", category_id)
     CatalogService(db).delete_category(category_id)
 
 
@@ -154,6 +158,7 @@ def update_product(
 
 @admin_router.delete("/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(product_id: uuid.UUID, db: Session = Depends(get_db)):
+    logger.info("Admin delete product id=%s", product_id)
     CatalogService(db).delete_product(product_id)
 
 

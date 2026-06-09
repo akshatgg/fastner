@@ -59,6 +59,7 @@ def _items_table(order: Order) -> str:
 def _send(user: User, subject: str, html: str) -> None:
     try:
         send_email(to=user.email, subject=subject, html_body=html)
+        logger.info("Sent order email %r to %s", subject, user.email)
     except Exception:  # noqa: BLE001 — email is best-effort, never block the request
         logger.exception("Failed to send order email %r to %s", subject, user.email)
 

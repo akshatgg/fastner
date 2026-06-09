@@ -1,5 +1,6 @@
 """Address-book HTTP routes — all scoped to the authenticated user."""
 
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, status
@@ -10,6 +11,8 @@ from app.address.service import AddressService
 from app.auth.models import User
 from app.core.database import get_db
 from app.utils.dependencies import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/addresses", tags=["addresses"])
 
@@ -57,4 +60,5 @@ def delete_address(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    logger.info("Delete address id=%s for user=%s", address_id, user.id)
     AddressService(db).delete(user.id, address_id)

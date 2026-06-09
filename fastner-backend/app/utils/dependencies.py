@@ -12,6 +12,7 @@ user and enforcing roles is cross-cutting — every protected route needs it.
     def admin_only(): ...
 """
 
+import logging
 import uuid
 
 import jwt
@@ -22,6 +23,8 @@ from sqlalchemy.orm import Session
 from app.auth import helpers
 from app.auth.models import User
 from app.core.database import get_db
+
+logger = logging.getLogger(__name__)
 
 bearer_scheme = HTTPBearer()
 
@@ -39,6 +42,7 @@ def get_current_user(
     try:
         payload = helpers.decode_access_token(credentials.credentials)
     except jwt.PyJWTError:
+        logger.warning("Rejected request: invalid or expired access token")
         raise invalid
 
     if payload.get("type") != "access":
@@ -58,6 +62,12 @@ def require_role(*allowed_roles: str):
 
     def checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in allowed_roles:
+            logger.warning(
+                "Role check failed for user %s (role=%s, required one of %s)",
+                current_user.id,
+                current_user.role,
+                allowed_roles,
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You do not have permission to access this resource.",

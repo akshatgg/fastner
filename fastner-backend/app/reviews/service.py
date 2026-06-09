@@ -6,6 +6,7 @@ as a "verified purchase" badge — computed against the orders tables — but is
 longer required to review.
 """
 
+import logging
 import uuid
 
 from fastapi import HTTPException, status
@@ -17,6 +18,8 @@ from app.catalog.models import Product
 from app.orders.service import OrderService
 from app.reviews import schemas
 from app.reviews.models import Review
+
+logger = logging.getLogger(__name__)
 
 
 class ReviewService:
@@ -112,6 +115,14 @@ class ReviewService:
         existing = self._my_review(user.id, product.id)
         media = [m.model_dump() for m in data.media]
         if existing is not None:
+            # Re-submitting updates the author's single existing review rather
+            # than creating a duplicate.
+            logger.warning(
+                "Review re-submission: updating existing review id=%s (user=%s, product=%s)",
+                existing.id,
+                user.id,
+                product.id,
+            )
             existing.rating = data.rating
             existing.title = data.title
             existing.body = data.body
@@ -130,5 +141,20 @@ class ReviewService:
 
         self.db.commit()
         self.db.refresh(review)
+        if media:
+            logger.info(
+                "Review media handled: review=%s product=%s items=%d",
+                review.id,
+                product.id,
+                len(media),
+            )
         verified = OrderService(self.db).has_purchased(user.id, product.id)
+        logger.info(
+            "Review submitted: id=%s user=%s product=%s rating=%s verified_purchase=%s",
+            review.id,
+            user.id,
+            product.id,
+            review.rating,
+            verified,
+        )
         return self._to_response(review, verified)

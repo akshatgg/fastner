@@ -5,18 +5,18 @@ import type { OrderStatus, PaymentStatus } from "./types";
 type Badge = { label: string; cls: string };
 
 const ORDER_BADGES: Record<OrderStatus, Badge> = {
-  pending_approval: { label: "Pending approval", cls: "bg-amber-100 text-amber-700" },
-  approved: { label: "Approved", cls: "bg-blue-100 text-blue-700" },
-  shipped: { label: "Shipped", cls: "bg-indigo-100 text-indigo-700" },
-  delivered: { label: "Delivered", cls: "bg-green-100 text-green-700" },
-  declined: { label: "Declined", cls: "bg-red-100 text-red-700" },
+  pending_approval: { label: "Pending approval", cls: "bg-warning-100 text-warning-700" },
+  approved: { label: "Approved", cls: "bg-info-100 text-info-700" },
+  shipped: { label: "Shipped", cls: "bg-info-100 text-info-700" },
+  delivered: { label: "Delivered", cls: "bg-success-100 text-success-700" },
+  declined: { label: "Declined", cls: "bg-danger-100 text-danger-700" },
   cancelled: { label: "Cancelled", cls: "bg-ink-200 text-ink-600" },
 };
 
 const PAYMENT_BADGES: Record<PaymentStatus, Badge> = {
   unpaid: { label: "Unpaid", cls: "bg-ink-100 text-ink-600" },
-  paid: { label: "Paid", cls: "bg-green-100 text-green-700" },
-  refund_initiated: { label: "Refund initiated", cls: "bg-amber-100 text-amber-700" },
+  paid: { label: "Paid", cls: "bg-success-100 text-success-700" },
+  refund_initiated: { label: "Refund initiated", cls: "bg-warning-100 text-warning-700" },
   refunded: { label: "Refunded", cls: "bg-ink-200 text-ink-600" },
 };
 

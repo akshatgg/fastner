@@ -1,6 +1,9 @@
 """Small pure helpers for the catalog feature."""
 
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 _slug_strip = re.compile(r"[^a-z0-9]+")
 

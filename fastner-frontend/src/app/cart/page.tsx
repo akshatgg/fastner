@@ -86,7 +86,7 @@ export default function CartPage() {
                   onClick={() => {
                     if (confirm("Remove all items from your cart?")) clear.mutate();
                   }}
-                  className="mt-4 text-sm font-semibold text-ink-500 transition hover:text-red-600"
+                  className="mt-4 text-sm font-semibold text-ink-500 transition hover:text-danger-600"
                 >
                   Clear cart
                 </button>
@@ -160,7 +160,7 @@ function CartRow({ item, mode }: { item: CartItem; mode: "b2c" | "b2b" }) {
   };
 
   return (
-    <li className="flex items-center gap-4 p-4">
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
       <Link
         href={`/product/${item.slug}`}
         className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-ink-100 bg-ink-50"
@@ -197,47 +197,51 @@ function CartRow({ item, mode }: { item: CartItem; mode: "b2c" | "b2b" }) {
           </p>
         )}
         {!item.is_active && (
-          <p className="text-xs font-semibold text-amber-600">
+          <p className="text-xs font-semibold text-warning-600">
             No longer available
           </p>
         )}
       </div>
 
-      {/* Quantity stepper */}
-      <div className="flex items-center rounded-lg border border-ink-200">
+      {/* Controls — wrap to a full-width row under the item on phones, then sit
+          inline on the right from sm up. */}
+      <div className="flex w-full items-center gap-3 sm:w-auto sm:gap-4">
+        {/* Quantity stepper */}
+        <div className="flex items-center rounded-lg border border-ink-200">
+          <button
+            onClick={() => setQty(item.quantity - 1)}
+            disabled={update.isPending || item.quantity <= minQty}
+            className="p-2 text-ink-500 transition hover:text-brand-600 disabled:opacity-40"
+            aria-label="Decrease quantity"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <span className="w-10 text-center text-sm font-semibold text-ink-900">
+            {item.quantity}
+          </span>
+          <button
+            onClick={() => setQty(item.quantity + 1)}
+            disabled={update.isPending}
+            className="p-2 text-ink-500 transition hover:text-brand-600 disabled:opacity-40"
+            aria-label="Increase quantity"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="ml-auto w-20 shrink-0 text-right text-sm font-semibold text-ink-900 sm:ml-0">
+          {formatPrice(item.line_total)}
+        </div>
+
         <button
-          onClick={() => setQty(item.quantity - 1)}
-          disabled={update.isPending || item.quantity <= minQty}
-          className="p-2 text-ink-500 transition hover:text-brand-600 disabled:opacity-40"
-          aria-label="Decrease quantity"
+          onClick={() => remove.mutate(item.product_id)}
+          disabled={remove.isPending}
+          className="rounded-md p-2 text-ink-400 transition hover:bg-ink-50 hover:text-danger-600"
+          aria-label="Remove item"
         >
-          <Minus className="h-4 w-4" />
-        </button>
-        <span className="w-10 text-center text-sm font-semibold text-ink-900">
-          {item.quantity}
-        </span>
-        <button
-          onClick={() => setQty(item.quantity + 1)}
-          disabled={update.isPending}
-          className="p-2 text-ink-500 transition hover:text-brand-600 disabled:opacity-40"
-          aria-label="Increase quantity"
-        >
-          <Plus className="h-4 w-4" />
+          <Trash2 className="h-4 w-4" />
         </button>
       </div>
-
-      <div className="w-20 shrink-0 text-right text-sm font-semibold text-ink-900">
-        {formatPrice(item.line_total)}
-      </div>
-
-      <button
-        onClick={() => remove.mutate(item.product_id)}
-        disabled={remove.isPending}
-        className="rounded-md p-2 text-ink-400 transition hover:bg-ink-50 hover:text-red-600"
-        aria-label="Remove item"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
     </li>
   );
 }

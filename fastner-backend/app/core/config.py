@@ -21,6 +21,9 @@ class Settings:
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production").strip().lower()
     IS_DEVELOPMENT: bool = ENVIRONMENT in {"development", "dev", "local"}
 
+    # Logging verbosity for the root logger (DEBUG/INFO/WARNING/ERROR).
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
+
     # JWT / auth
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "change-me-in-production")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
@@ -33,6 +36,13 @@ class Settings:
         "JWT_SECRET_KEY", "change-me-in-production"
     )
 
+    # Master email kill-switch. EMAIL_ENABLED=false disables ALL outbound mail
+    # everywhere — every email funnels through app/utils/email.py, which
+    # short-circuits when this is off, regardless of POSTMARK_SERVER_TOKEN. Use it
+    # to be 100% sure no mail leaves (e.g. local dev with a real Postmark token).
+    # Defaults on so production keeps sending.
+    EMAIL_ENABLED: bool = _env_bool("EMAIL_ENABLED", True)
+
     # Email verification master switch.
     #   True  → new accounts are auto-verified, NO email is sent, signup logs in.
     #   False → new accounts start unverified, a Postmark verification email is
@@ -40,7 +50,13 @@ class Settings:
     # Defaults FROM the environment: development auto-verifies (signup works
     # without Postmark); production requires verification. An explicit
     # AUTO_VERIFY_EMAIL still overrides this default if set.
-    AUTO_VERIFY_EMAIL: bool = _env_bool("AUTO_VERIFY_EMAIL", IS_DEVELOPMENT)
+    #
+    # Tied to EMAIL_ENABLED: when email sending is OFF there is no way to deliver a
+    # verification link, so accounts are ALWAYS auto-verified — no confirmation
+    # email is attempted at signup and the user can sign in immediately.
+    AUTO_VERIFY_EMAIL: bool = (
+        _env_bool("AUTO_VERIFY_EMAIL", IS_DEVELOPMENT) or not EMAIL_ENABLED
+    )
     EMAIL_VERIFICATION_EXPIRE_HOURS: int = int(
         os.getenv("EMAIL_VERIFICATION_EXPIRE_HOURS", "24")
     )
@@ -65,6 +81,12 @@ class Settings:
     CLOUDINARY_CLOUD_NAME: str | None = os.getenv("CLOUDINARY_CLOUD_NAME")
     CLOUDINARY_API_KEY: str | None = os.getenv("CLOUDINARY_API_KEY")
     CLOUDINARY_API_SECRET: str | None = os.getenv("CLOUDINARY_API_SECRET")
+
+    # Google Sign-In (OAuth ID-token flow). The Web OAuth client ID from the
+    # Google Cloud Console — the same value is exposed to the frontend as
+    # NEXT_PUBLIC_GOOGLE_CLIENT_ID. Blank → the /auth/google endpoint is disabled
+    # (returns 503), the same config-gating style as the optional Razorpay keys.
+    GOOGLE_CLIENT_ID: str | None = os.getenv("GOOGLE_CLIENT_ID")
 
 
 settings = Settings()
