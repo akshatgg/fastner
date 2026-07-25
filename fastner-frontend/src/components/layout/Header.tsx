@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Menu,
   X,
@@ -21,13 +22,11 @@ import { useAuthStore } from "@/lib/store/auth-store";
 import { useLogout } from "@/features/auth/queries";
 import { useCartCount } from "@/features/cart/queries";
 import { useAddresses } from "@/features/address/queries";
-import SearchOverlay from "@/components/layout/SearchOverlay";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   // Gate auth-dependent UI behind mount so the persisted store doesn't cause a
   // server/client hydration mismatch (server always renders the logged-out view).
   const [mounted, setMounted] = useState(false);
@@ -62,32 +61,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50">
-      {/* Utility strip */}
-      <div className="hidden bg-ink-950 text-ink-300 lg:block">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 text-base sm:px-6 lg:px-8">
-          <p className="font-display uppercase tracking-[0.2em] text-brand-500">
-            {SITE.tagline}
-          </p>
-          <div className="flex items-center gap-6">
-            <a
-              href={SITE.phoneHref}
-              className="flex items-center gap-2 transition-colors hover:text-white"
-            >
-              <Phone className="h-5 w-5 text-brand-500" />
-              {SITE.phone}
-            </a>
-            <a
-              href={SITE.emailHref}
-              className="flex items-center gap-2 transition-colors hover:text-white"
-            >
-              <Mail className="h-5 w-5 text-brand-500" />
-              {SITE.email}
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* Main bar */}
+      {/* Row 1 — logo, search bar, cart & account */}
       <div
         className={[
           "border-b transition-all duration-200",
@@ -96,8 +70,8 @@ export default function Header() {
             : "border-transparent bg-white",
         ].join(" ")}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 sm:gap-4">
             <a href="/" className="flex shrink-0 items-center">
               <Image
                 src="/logo-dark.png"
@@ -109,143 +83,168 @@ export default function Header() {
               />
             </a>
             {mounted && isAuthed && <DeliveryLocation />}
+
+            {/* Search bar — inline on tablet/desktop */}
+            <HeaderSearch className="mx-auto hidden max-w-2xl flex-1 md:flex" />
+
+            {/* Account / cart actions */}
+            <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
+              <a
+                href="/cart"
+                aria-label="Cart"
+                className="relative inline-flex items-center gap-2 rounded-md p-2.5 text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
+              >
+                <span className="relative">
+                  <ShoppingCart className="h-6 w-6" />
+                  {mounted && cartCount > 0 && (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold leading-none text-white">
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
+                </span>
+                <span className="hidden text-sm font-semibold sm:inline">
+                  Cart
+                </span>
+              </a>
+
+              {isAuthed ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setProfileOpen((v) => !v)}
+                    aria-label="Account menu"
+                    aria-expanded={profileOpen}
+                    className="inline-flex items-center gap-1.5 rounded-md p-1.5 text-ink-700 transition-colors hover:bg-ink-50 sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-2.5"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
+                      {initials}
+                    </span>
+                    <span className="hidden text-sm font-semibold text-ink-800 sm:inline">
+                      {firstName}
+                    </span>
+                    <ChevronDown
+                      className={`hidden h-4 w-4 text-ink-500 transition-transform sm:inline ${profileOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {profileOpen && (
+                    <>
+                      {/* click-catcher to close on outside click */}
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setProfileOpen(false)}
+                      />
+                      <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-ink-100 bg-white py-1 shadow-lg">
+                        <div className="border-b border-ink-50 px-4 py-3">
+                          <p className="truncate text-sm font-semibold text-ink-900">
+                            {user?.full_name}
+                          </p>
+                          {user?.email && (
+                            <p className="truncate text-xs text-ink-500">
+                              {user.email}
+                            </p>
+                          )}
+                        </div>
+                        {isAdmin && (
+                          <a
+                            href="/admin"
+                            onClick={() => setProfileOpen(false)}
+                            className="flex items-center gap-2.5 border-b border-ink-50 px-4 py-2.5 text-sm font-semibold text-brand-600 transition-colors hover:bg-brand-50"
+                          >
+                            <LayoutDashboard className="h-4 w-4" />
+                            Admin dashboard
+                          </a>
+                        )}
+                        <a
+                          href="/account"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-ink-800 transition-colors hover:bg-ink-50 hover:text-brand-600"
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          Dashboard
+                        </a>
+                        <a
+                          href="/orders"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
+                        >
+                          <Package className="h-4 w-4" />
+                          My orders
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileOpen(false);
+                            logout.mutate();
+                          }}
+                          className="flex w-full items-center gap-2.5 border-t border-ink-50 px-4 py-2.5 text-left text-sm font-medium text-danger-600 transition-colors hover:bg-danger-50"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign out
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <a
+                  href="/sign-in"
+                  className="inline-flex items-center gap-2 rounded-md p-2.5 text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
+                >
+                  <User className="h-6 w-6" />
+                  <span className="hidden text-sm font-semibold sm:inline">
+                    Sign in
+                  </span>
+                </a>
+              )}
+
+              {/* Mobile toggle */}
+              <button
+                type="button"
+                aria-label="Toggle menu"
+                aria-expanded={open}
+                onClick={() => setOpen((v) => !v)}
+                className="inline-flex items-center justify-center rounded-md p-2.5 text-ink-800 lg:hidden"
+              >
+                {open ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
+              </button>
+            </div>
           </div>
 
-          <nav className="hidden items-center gap-8 lg:flex">
+          {/* Search bar — full-width row on mobile */}
+          <HeaderSearch className="mt-3 md:hidden" />
+        </div>
+      </div>
+
+      {/* Row 2 — primary nav (left) + contact (right). Desktop only; mobile uses the drawer. */}
+      <div className="hidden border-b border-white/5 bg-ink-950 lg:block">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <nav className="flex items-center">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="text-base font-semibold text-ink-700 transition-colors hover:text-brand-600"
+                className="px-4 py-3 text-sm font-semibold uppercase tracking-wide text-ink-200 transition-colors first:pl-0 hover:text-brand-400"
               >
                 {link.label}
               </a>
             ))}
           </nav>
-
-          {/* Account / cart / search actions */}
-          <div className="flex items-center gap-0.5 sm:gap-1">
-            <button
-              type="button"
-              aria-label="Search"
-              onClick={() => setSearchOpen(true)}
-              className="inline-flex items-center justify-center rounded-md p-2.5 text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
-            >
-              <Search className="h-6 w-6" />
-            </button>
-
+          <div className="flex items-center gap-6 text-sm text-ink-300">
             <a
-              href="/cart"
-              aria-label="Cart"
-              className="relative inline-flex items-center justify-center rounded-md p-2.5 text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
+              href={SITE.phoneHref}
+              className="flex items-center gap-2 transition-colors hover:text-white"
             >
-              <ShoppingCart className="h-6 w-6" />
-              {mounted && cartCount > 0 && (
-                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[10px] font-bold leading-none text-white">
-                  {cartCount > 99 ? "99+" : cartCount}
-                </span>
-              )}
+              <Phone className="h-4 w-4 text-brand-500" />
+              {SITE.phone}
             </a>
-
-            {isAuthed ? (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((v) => !v)}
-                  aria-label="Account menu"
-                  aria-expanded={profileOpen}
-                  className="inline-flex items-center gap-1.5 rounded-md p-1.5 text-ink-700 transition-colors hover:bg-ink-50 sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-2.5"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
-                    {initials}
-                  </span>
-                  <span className="hidden text-sm font-semibold text-ink-800 sm:inline">
-                    {firstName}
-                  </span>
-                  <ChevronDown
-                    className={`hidden h-4 w-4 text-ink-500 transition-transform sm:inline ${profileOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                {profileOpen && (
-                  <>
-                    {/* click-catcher to close on outside click */}
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setProfileOpen(false)}
-                    />
-                    <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-ink-100 bg-white py-1 shadow-lg">
-                      <div className="border-b border-ink-50 px-4 py-3">
-                        <p className="truncate text-sm font-semibold text-ink-900">
-                          {user?.full_name}
-                        </p>
-                        {user?.email && (
-                          <p className="truncate text-xs text-ink-500">
-                            {user.email}
-                          </p>
-                        )}
-                      </div>
-                      {isAdmin && (
-                        <a
-                          href="/admin"
-                          onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-2.5 border-b border-ink-50 px-4 py-2.5 text-sm font-semibold text-brand-600 transition-colors hover:bg-brand-50"
-                        >
-                          <LayoutDashboard className="h-4 w-4" />
-                          Admin dashboard
-                        </a>
-                      )}
-                      <a
-                        href="/account"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-ink-800 transition-colors hover:bg-ink-50 hover:text-brand-600"
-                      >
-                        <LayoutDashboard className="h-4 w-4" />
-                        Dashboard
-                      </a>
-                      <a
-                        href="/orders"
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
-                      >
-                        <Package className="h-4 w-4" />
-                        My orders
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfileOpen(false);
-                          logout.mutate();
-                        }}
-                        className="flex w-full items-center gap-2.5 border-t border-ink-50 px-4 py-2.5 text-left text-sm font-medium text-danger-600 transition-colors hover:bg-danger-50"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Sign out
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <a
-                href="/sign-in"
-                aria-label="Account"
-                className="inline-flex items-center justify-center rounded-md p-2.5 text-ink-700 transition-colors hover:bg-ink-50 hover:text-brand-600"
-              >
-                <User className="h-6 w-6" />
-              </a>
-            )}
-
-            {/* Mobile toggle */}
-            <button
-              type="button"
-              aria-label="Toggle menu"
-              aria-expanded={open}
-              onClick={() => setOpen((v) => !v)}
-              className="inline-flex items-center justify-center rounded-md p-2.5 text-ink-800 lg:hidden"
+            <a
+              href={SITE.emailHref}
+              className="flex items-center gap-2 transition-colors hover:text-white"
             >
-              {open ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
-            </button>
+              <Mail className="h-4 w-4 text-brand-500" />
+              {SITE.email}
+            </a>
           </div>
         </div>
       </div>
@@ -254,7 +253,7 @@ export default function Header() {
       {open && (
         <div className="lg:hidden">
           <div
-            className="fixed inset-0 top-[65px] bg-ink-950/40"
+            className="absolute inset-x-0 top-full h-screen bg-ink-950/40"
             onClick={() => setOpen(false)}
           />
           <nav className="absolute inset-x-0 top-full origin-top border-b border-ink-100 bg-white px-4 pb-6 pt-2 shadow-lg sm:px-6">
@@ -353,9 +352,45 @@ export default function Header() {
           </nav>
         </div>
       )}
-
-      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
+  );
+}
+
+/** Rounded search field (logo → search → cart layout). Submitting navigates to
+ *  the full search results page; the type-ahead lives there. */
+function HeaderSearch({ className }: { className?: string }) {
+  const router = useRouter();
+  const [term, setTerm] = useState("");
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const q = term.trim();
+        if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
+      }}
+      className={className}
+      role="search"
+    >
+      <div className="relative flex w-full items-center">
+        <Search className="pointer-events-none absolute left-4 h-5 w-5 text-ink-400" />
+        <input
+          type="search"
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder="What are you looking for today?"
+          aria-label="Search products"
+          className="w-full rounded-full border border-ink-200 bg-ink-50 py-2.5 pl-11 pr-14 text-sm text-ink-900 transition-colors placeholder:text-ink-400 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+        />
+        <button
+          type="submit"
+          aria-label="Search"
+          className="absolute right-1.5 inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-white transition-colors hover:bg-brand-600"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -368,7 +403,7 @@ function DeliveryLocation() {
   return (
     <a
       href="/account"
-      className="hidden items-center gap-1.5 rounded-md px-2 py-1 text-left transition-colors hover:bg-ink-50 md:flex"
+      className="hidden items-center gap-1.5 rounded-md px-2 py-1 text-left transition-colors hover:bg-ink-50 xl:flex"
       title="Change delivery location"
     >
       <MapPin className="h-5 w-5 shrink-0 text-brand-500" />

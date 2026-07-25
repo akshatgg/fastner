@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import Header from "@/components/layout/Header";
 import { useRequireAdmin } from "@/features/catalog/queries";
 import { useCurrentUser } from "@/features/auth/queries";
 
@@ -77,7 +78,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   if (!isAdmin) return null;
 
   return (
-    <div className="flex min-h-screen bg-ink-50">
+    <>
+      <Header />
+      <div className="flex flex-1 bg-ink-50">
       {/* Desktop sidebar (≥ lg) */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-ink-100 bg-white px-4 py-6 lg:flex">
         <div className="px-2">
@@ -158,6 +161,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

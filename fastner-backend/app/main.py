@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.address.router import router as address_router
+from app.core.config import settings
 from app.auth.router import admin_router as users_admin_router
 from app.payments.router import router as payments_router
 from app.auth.router import router as auth_router
@@ -54,7 +55,7 @@ app = FastAPI(title="Fastner API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

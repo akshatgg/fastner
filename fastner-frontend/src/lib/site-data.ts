@@ -25,14 +25,6 @@ export const SITE = {
   address: "India",
 };
 
-/** Rotating promo messages shown in the top announcement bar. */
-export const ANNOUNCEMENTS = [
-  "Free shipping on orders above ₹999 — across India",
-  "Trusted brands in stock — TVS, fischer, HILTI & more",
-  "Bulk & OEM enquiries welcome — request a custom quote",
-  "Genuine-quality fasteners · Fastening solutions, delivered",
-];
-
 export const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Products", href: "/#categories" },

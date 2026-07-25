@@ -73,6 +73,24 @@ class Settings:
     # Frontend base URL — used to build the verification link inside emails.
     FRONTEND_BASE_URL: str = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
 
+    # Browser origins allowed to call this API, as a comma-separated list. The
+    # local Next.js dev server is always permitted; deployments append their own
+    # origin (e.g. the Cloud Run frontend URL) via the CORS_ORIGINS env var.
+    # FRONTEND_BASE_URL is folded in automatically so the two can never drift.
+    CORS_ORIGINS: list[str] = list(
+        dict.fromkeys(
+            [
+                *(
+                    o.strip()
+                    for o in os.getenv("CORS_ORIGINS", "").split(",")
+                    if o.strip()
+                ),
+                FRONTEND_BASE_URL,
+                "http://localhost:3000",
+            ]
+        )
+    )
+
     # Cloudinary (server-side). Only needed for signed operations like deleting
     # an image when a product/category is removed. The browser upload flow uses
     # the public cloud name + unsigned preset and does NOT use these.
