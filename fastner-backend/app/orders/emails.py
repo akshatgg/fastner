@@ -1,7 +1,7 @@
 """Order lifecycle emails.
 
 Sent to the customer's account email at each milestone (placed, approved,
-declined/refund, shipped, delivered). Best-effort: a Postmark failure is logged
+declined/refund, shipped, delivered). Best-effort: an SMTP failure is logged
 but never breaks the API call that triggered it — the order state is the source
 of truth, the email is a courtesy.
 """

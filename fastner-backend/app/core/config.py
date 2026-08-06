@@ -38,17 +38,17 @@ class Settings:
 
     # Master email kill-switch. EMAIL_ENABLED=false disables ALL outbound mail
     # everywhere — every email funnels through app/utils/email.py, which
-    # short-circuits when this is off, regardless of POSTMARK_SERVER_TOKEN. Use it
-    # to be 100% sure no mail leaves (e.g. local dev with a real Postmark token).
+    # short-circuits when this is off, regardless of the SMTP config. Use it to
+    # be 100% sure no mail leaves (e.g. local dev with real SMTP credentials).
     # Defaults on so production keeps sending.
     EMAIL_ENABLED: bool = _env_bool("EMAIL_ENABLED", True)
 
     # Email verification master switch.
     #   True  → new accounts are auto-verified, NO email is sent, signup logs in.
-    #   False → new accounts start unverified, a Postmark verification email is
+    #   False → new accounts start unverified, an SMTP verification email is
     #           sent, and login is blocked until the link is clicked.
     # Defaults FROM the environment: development auto-verifies (signup works
-    # without Postmark); production requires verification. An explicit
+    # without SMTP); production requires verification. An explicit
     # AUTO_VERIFY_EMAIL still overrides this default if set.
     #
     # Tied to EMAIL_ENABLED: when email sending is OFF there is no way to deliver a
@@ -65,10 +65,21 @@ class Settings:
         os.getenv("PASSWORD_RESET_EXPIRE_HOURS", "2")
     )
 
-    # Postmark transactional email (only needed when AUTO_VERIFY_EMAIL is False).
-    POSTMARK_SERVER_TOKEN: str | None = os.getenv("POSTMARK_SERVER_TOKEN")
-    POSTMARK_MESSAGE_STREAM: str = os.getenv("POSTMARK_MESSAGE_STREAM", "outbound")
     EMAIL_FROM: str = os.getenv("EMAIL_FROM", "no-reply@ibcfasteners.com")
+
+    # SMTP transactional email (the only email backend). For Gmail, SMTP_PASSWORD
+    # must be a 16-char App Password (not the account password), and EMAIL_FROM
+    # should be the authenticated SMTP_USER (Gmail rewrites a mismatched From).
+    # STARTTLS is used on the default port 587. Leave SMTP_HOST blank in local
+    # dev to log emails instead of sending them.
+    SMTP_HOST: str | None = os.getenv("SMTP_HOST") or None
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER: str | None = os.getenv("SMTP_USER")
+    # App Password / SMTP secret. Spaces (as Gmail displays them) are stripped.
+    SMTP_PASSWORD: str | None = (
+        os.getenv("SMTP_PASSWORD", "").replace(" ", "") or None
+    )
+    SMTP_USE_TLS: bool = _env_bool("SMTP_USE_TLS", True)
 
     # Frontend base URL — used to build the verification link inside emails.
     FRONTEND_BASE_URL: str = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")

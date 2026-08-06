@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting IBC Fasteners API (env=%s)...", settings.ENVIRONMENT)
     logger.info(
         "Email verification: %s",
-        "auto (no emails sent)" if settings.AUTO_VERIFY_EMAIL else "required (Postmark)",
+        "auto (no emails sent)" if settings.AUTO_VERIFY_EMAIL else "required (SMTP)",
     )
     if not settings.GOOGLE_CLIENT_ID:
         logger.warning("GOOGLE_CLIENT_ID not set — Google sign-in is disabled.")

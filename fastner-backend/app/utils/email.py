@@ -1,21 +1,20 @@
-"""Transactional email sending via Postmark.
+"""Transactional email sending over SMTP.
 
-Talks to Postmark's REST API over the stdlib ``urllib`` so we add no new
-dependency. When no server token is configured (typical local dev with
-``AUTO_VERIFY_EMAIL=True``), the message is logged instead of sent so flows keep
-working without Postmark wired up.
+Sends via the stdlib ``smtplib`` (STARTTLS) — e.g. Gmail with a 16-char App
+Password — so no third-party dependency is added. When SMTP is not configured
+(typical local dev with ``AUTO_VERIFY_EMAIL=True``) the message is logged
+instead of sent so flows keep working without email wired up. ``EMAIL_ENABLED``
+is a global kill-switch that disables all outbound mail.
 """
 
-import json
 import logging
-import urllib.error
-import urllib.request
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-
-POSTMARK_API_URL = "https://api.postmarkapp.com/email"
 
 
 def send_email(
@@ -25,12 +24,12 @@ def send_email(
     html_body: str,
     text_body: str | None = None,
 ) -> None:
-    """Send a single transactional email through Postmark.
+    """Send a single transactional email over SMTP.
 
-    Raises on a Postmark/transport error so callers can decide how to react.
-    If ``POSTMARK_SERVER_TOKEN`` is unset, logs the message and returns without
-    sending (dev fallback). If ``EMAIL_ENABLED`` is false, sending is disabled
-    globally and the call is a no-op.
+    Raises on a transport error so callers can decide how to react. If
+    ``EMAIL_ENABLED`` is false, sending is disabled globally and the call is a
+    no-op. If ``SMTP_HOST`` is unset, the message is logged instead of sent
+    (dev fallback) so flows keep working without SMTP wired up.
     """
     # Master kill-switch: when email is disabled, no message ever leaves — this
     # gate covers every flow (verification, password reset, orders, support).
@@ -40,41 +39,32 @@ def send_email(
         )
         return
 
-    if not settings.POSTMARK_SERVER_TOKEN:
+    if not settings.SMTP_HOST:
         logger.warning(
-            "POSTMARK_SERVER_TOKEN not set — not sending. Email to %s: %r", to, subject
+            "SMTP_HOST not set — not sending. Email to %s: %r", to, subject
         )
         logger.info("Email body:\n%s", text_body or html_body)
         return
 
-    payload: dict[str, str] = {
-        "From": settings.EMAIL_FROM,
-        "To": to,
-        "Subject": subject,
-        "HtmlBody": html_body,
-        "MessageStream": settings.POSTMARK_MESSAGE_STREAM,
-    }
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = settings.EMAIL_FROM
+    msg["To"] = to
+    # Attach the plain-text alternative first (lower priority), then the HTML.
     if text_body:
-        payload["TextBody"] = text_body
+        msg.attach(MIMEText(text_body, "plain", "utf-8"))
+    msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-    request = urllib.request.Request(
-        POSTMARK_API_URL,
-        data=json.dumps(payload).encode(),
-        headers={
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "X-Postmark-Server-Token": settings.POSTMARK_SERVER_TOKEN,
-        },
-        method="POST",
-    )
     try:
-        with urllib.request.urlopen(request, timeout=10) as resp:
-            resp.read()
-        logger.info("Sent email to %s via Postmark: %r", to, subject)
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode(errors="replace")
-        logger.error("Postmark send failed (HTTP %s): %s", exc.code, detail)
-        raise
-    except urllib.error.URLError as exc:
-        logger.error("Postmark request failed: %s", exc)
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
+            server.ehlo()
+            if settings.SMTP_USE_TLS:
+                server.starttls()
+                server.ehlo()
+            if settings.SMTP_USER and settings.SMTP_PASSWORD:
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            server.sendmail(settings.EMAIL_FROM, [to], msg.as_string())
+        logger.info("Sent email to %s via SMTP: %r", to, subject)
+    except (smtplib.SMTPException, OSError) as exc:
+        logger.error("SMTP send failed: %s", exc)
         raise

@@ -48,7 +48,27 @@ steps:
           --max-retries 1 --task-timeout 10m \
           --execute-now --wait
 
-  # 4. Roll out. Only reached if the migration job succeeded.
+  # 3b. Seed the catalog (idempotent) against Cloud SQL, after the schema is
+  #     migrated and before traffic shifts, so the deployed storefront's
+  #     category tree and detailed products (data/products/*.json) match local.
+  #     Safe to re-run: categories/products are upserted by name/SKU, and
+  #     admin-managed fields (price, stock, is_active, images) are never touched.
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: seed
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud run jobs deploy ${_SERVICE}-seed \
+          --image ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA \
+          --region ${_REGION} \
+          --set-cloudsql-instances ${_SQL_INSTANCE} \
+          --set-secrets DATABASE_URL=fastner-db-url:latest \
+          --command python --args=-m,app.catalog.seed \
+          --max-retries 1 --task-timeout 10m \
+          --execute-now --wait
+
+  # 4. Roll out. Only reached if the migration and seed jobs succeeded.
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     id: deploy
     entrypoint: gcloud

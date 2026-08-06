@@ -1,6 +1,6 @@
 """Support-ticket emails — sent to the customer's account email so the whole
 conversation can also happen over email. Best-effort: failures are logged, never
-raised, so a Postmark hiccup doesn't break ticket creation or an admin reply.
+raised, so an SMTP hiccup doesn't break ticket creation or an admin reply.
 """
 
 import logging
