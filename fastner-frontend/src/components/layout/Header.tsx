@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Menu,
@@ -17,7 +18,9 @@ import {
   Package,
   MapPin,
 } from "lucide-react";
-import { NAV_LINKS, SITE } from "@/lib/site-data";
+import { LOGOS, NAV_LINKS, SITE } from "@/lib/site-data";
+import { useSearchCatalog } from "@/features/catalog/queries";
+import { formatPrice } from "@/lib/format";
 import { useAuthStore } from "@/lib/store/auth-store";
 import { useLogout } from "@/features/auth/queries";
 import { useCartCount } from "@/features/cart/queries";
@@ -74,10 +77,10 @@ export default function Header() {
           <div className="flex items-center gap-3 sm:gap-4">
             <a href="/" className="flex shrink-0 items-center">
               <Image
-                src="/logo-dark.png"
+                src={LOGOS.dark}
                 alt={`${SITE.name} — ${SITE.tagline}`}
-                width={437}
-                height={122}
+                width={LOGOS.width}
+                height={LOGOS.height}
                 priority
                 className="h-12 w-auto sm:h-14"
               />
@@ -356,28 +359,66 @@ export default function Header() {
   );
 }
 
-/** Rounded search field (logo → search → cart layout). Submitting navigates to
- *  the full search results page; the type-ahead lives there. */
+/** Rounded search field with a live type-ahead dropdown. As you type, the top
+ *  product matches (thumbnail + name + price) appear below the bar; submitting
+ *  or "Show all results" navigates to the full search results page. */
 function HeaderSearch({ className }: { className?: string }) {
   const router = useRouter();
   const [term, setTerm] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Debounce the term so we don't fire a request on every keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(term), 200);
+    return () => clearTimeout(id);
+  }, [term]);
+
+  // Close the dropdown when clicking outside the search field.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const { data, isFetching } = useSearchCatalog(debounced, 5);
+  const trimmed = debounced.trim();
+  const hasQuery = trimmed.length >= 2;
+  const products = data?.products ?? [];
+  const showDropdown = open && hasQuery;
+  const noResults = hasQuery && !isFetching && products.length === 0;
+
+  const submit = (q: string) => {
+    const query = q.trim();
+    if (!query) return;
+    router.push(`/search?q=${encodeURIComponent(query)}`);
+    setOpen(false);
+  };
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        const q = term.trim();
-        if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
+        submit(term);
       }}
       className={className}
       role="search"
     >
-      <div className="relative flex w-full items-center">
+      <div ref={containerRef} className="relative flex w-full items-center">
         <Search className="pointer-events-none absolute left-4 h-5 w-5 text-ink-400" />
         <input
           type="search"
           value={term}
-          onChange={(e) => setTerm(e.target.value)}
+          onChange={(e) => {
+            setTerm(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
           placeholder="What are you looking for today?"
           aria-label="Search products"
           className="w-full rounded-full border border-ink-200 bg-ink-50 py-2.5 pl-11 pr-14 text-sm text-ink-900 transition-colors placeholder:text-ink-400 focus:border-brand-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
@@ -389,8 +430,69 @@ function HeaderSearch({ className }: { className?: string }) {
         >
           <Search className="h-4 w-4" />
         </button>
+
+        {/* Type-ahead suggestions */}
+        {showDropdown && (
+          <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-ink-100 bg-white py-1.5 shadow-lift">
+            {noResults ? (
+              <p className="px-4 py-6 text-center text-sm text-ink-400">
+                No products match “{trimmed}”.
+              </p>
+            ) : (
+              <>
+                {products.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/product/${p.slug}`}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2 transition-colors hover:bg-ink-50"
+                  >
+                    <SuggestionThumb src={p.image_url} alt={p.name} />
+                    <span className="min-w-0 flex-1 truncate text-sm text-ink-800">
+                      {p.name}
+                    </span>
+                    {p.price_b2c != null && (
+                      <span className="shrink-0 text-sm font-semibold text-ink-900">
+                        {formatPrice(p.price_b2c)}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => submit(term)}
+                  className="mt-1 block w-full border-t border-ink-50 px-4 py-2.5 text-left text-sm font-semibold text-brand-600 transition-colors hover:bg-brand-50"
+                >
+                  Show all results for “{trimmed}”
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </form>
+  );
+}
+
+/** Square thumbnail for a search suggestion; falls back to the product's first
+ *  letter when it has no image yet. */
+function SuggestionThumb({ src, alt }: { src: string | null; alt: string }) {
+  return (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-ink-50">
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt={alt}
+          className="h-full w-full object-contain p-1"
+          loading="lazy"
+        />
+      ) : (
+        <span className="font-display text-base font-bold text-ink-300">
+          {alt.trim().charAt(0).toUpperCase()}
+        </span>
+      )}
+    </span>
   );
 }
 

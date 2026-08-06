@@ -15,7 +15,7 @@ export default function Contact() {
   }
 
   return (
-    <section id="contact" className="bg-ink-50 py-20 sm:py-24">
+    <section id="contact" className="bg-sand-100 py-20 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid overflow-hidden rounded-3xl border border-ink-100 bg-white shadow-card lg:grid-cols-5">
           {/* Info panel */}

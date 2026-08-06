@@ -33,8 +33,8 @@ export default function FastenerPoster({ className }: { className?: string }) {
           <stop offset="1" stopColor="#6b717b" />
         </linearGradient>
         <radialGradient id="glow" cx="0.5" cy="0.45" r="0.6">
-          <stop offset="0" stopColor="#f26a21" stopOpacity="0.35" />
-          <stop offset="1" stopColor="#f26a21" stopOpacity="0" />
+          <stop offset="0" stopColor="#ec3a26" stopOpacity="0.35" />
+          <stop offset="1" stopColor="#ec3a26" stopOpacity="0" />
         </radialGradient>
       </defs>
 
@@ -146,7 +146,7 @@ export default function FastenerPoster({ className }: { className?: string }) {
       <g transform="translate(70,300) scale(0.55)" opacity="0.95">
         <polygon
           points="-23,-40 23,-40 46,0 23,40 -23,40 -46,0"
-          fill="#f26a21"
+          fill="#ec3a26"
           stroke="#bb3e0e"
           strokeWidth="3"
         />

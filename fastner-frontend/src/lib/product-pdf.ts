@@ -4,7 +4,7 @@
  * short description, attributes (filter values), the full specifications table,
  * B2C/B2B pricing, and the long description — plus the primary image when it
  * can be fetched. Uses jsPDF (loaded lazily, browser-only); no server round-trip. */
-import { SITE } from "@/lib/site-data";
+import { SITE, LOGOS } from "@/lib/site-data";
 import type { Product } from "@/features/catalog/types";
 
 // jsPDF's built-in Helvetica is Latin-1 only, so the ₹ glyph (U+20B9) renders
@@ -19,9 +19,9 @@ const MARGIN = 48;
 const LINE = 16;
 
 // Brand palette (kept in sync with the site theme).
-const BRAND: [number, number, number] = [242, 106, 33]; // orange
-const INK: [number, number, number] = [18, 18, 18];
-const MUTED: [number, number, number] = [120, 120, 120];
+const BRAND: [number, number, number] = [236, 58, 38]; // #EC3A26 brand red
+const INK: [number, number, number] = [20, 18, 18]; // #141212
+const MUTED: [number, number, number] = [130, 125, 125]; // #827D7D steel grey
 const BODY: [number, number, number] = [70, 70, 70];
 const HAIRLINE: [number, number, number] = [228, 228, 228];
 const ZEBRA: [number, number, number] = [247, 247, 247];
@@ -64,7 +64,8 @@ export async function downloadProductPdf(product: Product): Promise<void> {
   // Fetch the logo and primary image up front (both may be null on failure).
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const [logo, productImg] = await Promise.all([
-    fetchImageData(`${origin}/logo-dark.png`),
+    // encodeURI: the brand logo filenames contain spaces.
+    fetchImageData(encodeURI(`${origin}${LOGOS.dark}`)),
     product.images[0] ? fetchImageData(product.images[0]) : Promise.resolve(null),
   ]);
 

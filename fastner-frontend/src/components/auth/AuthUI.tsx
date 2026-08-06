@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
-import { SITE, AUTH_HIGHLIGHTS } from "@/lib/site-data";
+import { SITE, AUTH_HIGHLIGHTS, LOGOS } from "@/lib/site-data";
 import { HexNut, BoltSide } from "@/components/ui/FastenerArt";
 
 /** Split-screen auth chrome: industrial brand panel + a centred form column. */
@@ -33,10 +33,10 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <div className="relative px-12 pt-12">
           <a href="/" className="inline-flex">
             <Image
-              src="/logo-light.png"
+              src={LOGOS.light}
               alt={SITE.fullName}
-              width={437}
-              height={122}
+              width={LOGOS.width}
+              height={LOGOS.height}
               className="h-12 w-auto"
             />
           </a>
@@ -71,10 +71,10 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <div className="w-full max-w-md">
           <a href="/" className="mb-8 flex justify-center lg:hidden">
             <Image
-              src="/logo-dark.png"
+              src={LOGOS.dark}
               alt={SITE.fullName}
-              width={437}
-              height={122}
+              width={LOGOS.width}
+              height={LOGOS.height}
               className="h-12 w-auto"
             />
           </a>

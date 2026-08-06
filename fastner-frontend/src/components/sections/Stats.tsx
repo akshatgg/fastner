@@ -73,7 +73,7 @@ export default function Stats() {
     <section
       ref={sectionRef}
       aria-label="IBC by the numbers"
-      className="border-y border-ink-100 bg-ink-50"
+      className="border-y border-sand-200 bg-sand-50"
     >
       <div className="mx-auto grid max-w-7xl grid-cols-2 gap-y-12 px-4 py-16 sm:px-6 md:grid-cols-4 md:gap-y-0 lg:px-8">
         {stats.map((stat) => {

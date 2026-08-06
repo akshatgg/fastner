@@ -32,6 +32,20 @@ export const SITE = {
     "https://www.google.com/maps/search/?api=1&query=%23108,+3rd+Cross,+Vidhyanagar,+Bommasandra,+Bengaluru+-+560099",
 };
 
+/**
+ * The two approved brand logo files, served straight from `public/`. These are
+ * the only logo assets in use — `dark` for light backgrounds, `light` for dark
+ * ones. The filenames contain spaces, so anything doing a raw `fetch` of these
+ * (rather than passing them to `next/image`) must `encodeURI` the path first.
+ */
+export const LOGOS = {
+  dark: "/IBC logo black without bg.png",
+  light: "/IBC logo white without bg.png",
+  /** Intrinsic pixel size of both files, for `next/image` width/height. */
+  width: 429,
+  height: 130,
+} as const;
+
 export const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Products", href: "/#categories" },

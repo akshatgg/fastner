@@ -2,33 +2,60 @@
 
 /* ------------------------------------------------------------------ *
  * IBC — Design tokens
- * Brand: charcoal/ink + industrial orange (from the IBC logo)
+ *
+ * Brand palette (approved):
+ *   Primary   #EC3A26 (brand red)  ·  #827D7D (steel grey)
+ *   Secondary #ECE9E6 (sand)
+ * Ink stays the charcoal text/surface family from the logo body, warmed
+ * a touch so the neutrals sit with `steel` and `sand` rather than against
+ * them. Every ramp below is generated around those exact anchors — the
+ * anchor value itself is marked so it is never drifted by accident.
  * ------------------------------------------------------------------ */
 @theme {
-  /* Brand orange */
-  --color-brand-50: #fff4ed;
-  --color-brand-100: #ffe6d5;
-  --color-brand-200: #fec6aa;
-  --color-brand-300: #fd9d74;
-  --color-brand-400: #fb6a3c;
-  --color-brand-500: #f26a21;
-  --color-brand-600: #e2530f;
-  --color-brand-700: #bb3e0e;
-  --color-brand-800: #943314;
-  --color-brand-900: #772d14;
+  /* Primary — brand red (500 is the exact brand value) */
+  --color-brand-50: #fef3f1;
+  --color-brand-100: #fee3df;
+  --color-brand-200: #fecbc4;
+  --color-brand-300: #fba79b;
+  --color-brand-400: #f57462;
+  --color-brand-500: #ec3a26; /* brand primary */
+  --color-brand-600: #d92e1a;
+  --color-brand-700: #b62615;
+  --color-brand-800: #971e15;
+  --color-brand-900: #7d1e18;
+
+  /* Primary — steel grey (500 is the exact brand value). Secondary text,
+     dividers, muted surfaces and the quieter half of a brand pairing. */
+  --color-steel-50: #f7f6f6;
+  --color-steel-100: #eeecec;
+  --color-steel-200: #dbd8d8;
+  --color-steel-300: #c0bcbc;
+  --color-steel-400: #9d9898;
+  --color-steel-500: #827d7d; /* brand primary */
+  --color-steel-600: #6b6767;
+  --color-steel-700: #575353;
+  --color-steel-800: #474444;
+  --color-steel-900: #3c3939;
+
+  /* Secondary — sand (100 is the exact brand value). The warm section
+     background that alternates with white down the page. */
+  --color-sand-50: #f6f4f2;
+  --color-sand-100: #ece9e6; /* brand secondary */
+  --color-sand-200: #ddd8d3;
+  --color-sand-300: #cbc4bd;
 
   /* Ink / charcoal (matches logo body) */
-  --color-ink-50: #f6f6f6;
-  --color-ink-100: #e7e7e7;
-  --color-ink-200: #d1d1d1;
-  --color-ink-300: #b0b0b0;
-  --color-ink-400: #888888;
-  --color-ink-500: #6d6d6d;
-  --color-ink-600: #5d5d5d;
-  --color-ink-700: #4f4f4f;
-  --color-ink-800: #2c2c2c;
-  --color-ink-900: #1c1c1c;
-  --color-ink-950: #121212;
+  --color-ink-50: #f7f6f6;
+  --color-ink-100: #e9e7e7;
+  --color-ink-200: #d3d1d1;
+  --color-ink-300: #b2b0b0;
+  --color-ink-400: #8a8888;
+  --color-ink-500: #6f6d6d;
+  --color-ink-600: #5f5d5d;
+  --color-ink-700: #514f4f;
+  --color-ink-800: #2e2c2c;
+  --color-ink-900: #1e1c1c;
+  --color-ink-950: #141212;
 
   /* ---------------------------------------------------------------- *
    * Semantic status palette — the single home for status/feedback

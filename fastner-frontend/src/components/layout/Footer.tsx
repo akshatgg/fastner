@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Phone, Mail, MapPin } from "lucide-react";
-import { SITE, NAV_LINKS, HELP_LINKS, FOOTER_BLURB } from "@/lib/site-data";
+import { SITE, NAV_LINKS, HELP_LINKS, FOOTER_BLURB, LOGOS } from "@/lib/site-data";
 
 function Social({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
   return (
@@ -24,10 +24,10 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-4">
             <Image
-              src="/logo-light.png"
+              src={LOGOS.light}
               alt={SITE.name}
-              width={436}
-              height={122}
+              width={LOGOS.width}
+              height={LOGOS.height}
               className="h-12 w-auto"
             />
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-ink-400">

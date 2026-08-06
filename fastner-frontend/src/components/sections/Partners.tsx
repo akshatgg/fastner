@@ -21,7 +21,7 @@ export default function Partners() {
   // span the screen, so no logo is ever visible twice at once. Two identical
   // halves let the track loop by -50% with no seam.
   return (
-    <section id="partners" className="bg-ink-50 py-16 sm:py-20">
+    <section id="partners" className="bg-sand-100 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow="Brands We Stock"
@@ -33,11 +33,11 @@ export default function Partners() {
       <div className="group relative mt-12 overflow-hidden">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-ink-50 to-transparent sm:w-24"
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-sand-100 to-transparent sm:w-24"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-ink-50 to-transparent sm:w-24"
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-sand-100 to-transparent sm:w-24"
         />
 
         <div

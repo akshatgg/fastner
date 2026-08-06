@@ -81,7 +81,7 @@ export function openRazorpayCheckout({
       email: customer.email ?? undefined,
       contact: customer.contact ?? undefined,
     },
-    theme: { color: "#f26a21" },
+    theme: { color: "#ec3a26" },
     handler: onSuccess,
     modal: onDismiss ? { ondismiss: onDismiss } : undefined,
   });

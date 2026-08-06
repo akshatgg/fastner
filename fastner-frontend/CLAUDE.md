@@ -18,10 +18,21 @@ B2B industrial fastener supplier (screws, bolts, nuts, washers, anchors, tools).
 
 ## Brand
 
-- Orange `--color-brand-500: #f26a21`, charcoal `--color-ink-950: #121212` (from the logo).
+- **Approved palette** — primary `--color-brand-500: #EC3A26` (brand red) and
+  `--color-steel-500: #827D7D`; secondary `--color-sand-100: #ECE9E6`. Charcoal
+  `--color-ink-950: #141212` carries text/dark surfaces. Full ramps are generated around
+  those exact anchors in `globals.css`; the anchor stop in each ramp is commented — don't
+  drift it. Use tokens (`bg-brand-500`, `text-steel-500`, `bg-sand-100`), never raw hex.
+- Homepage section rhythm: dark hero → `sand-100` → white → `sand-50` → `sand-100` →
+  white → `sand-100`.
 - Display font: **Oswald** (condensed, uppercase headings — industrial feel). Body: **Inter**.
-- Logos in `public/`: `logo-dark.png` (for light bg), `logo-light.png` (for dark bg).
-  Originals are in `public/assets/`.
+- **Logos — exactly two files, both in `public/`, and no others:**
+  `IBC logo black without bg.png` (for light bg) and `IBC logo white without bg.png`
+  (for dark bg), both 429×130. Reference them through `LOGOS` in `src/lib/site-data.ts`,
+  never as string literals. The filenames contain spaces, so any raw `fetch`/metadata URL
+  must `encodeURI` the path (`product-pdf.ts` and `seo.ts` do). The favicon and app icons
+  (`src/app/{favicon.ico,icon.png,apple-icon.png}`, `public/icon-512.png`) are generated
+  from the wrench mark of the black logo.
 
 ## Structure
 

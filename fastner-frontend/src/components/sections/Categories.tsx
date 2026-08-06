@@ -10,7 +10,7 @@ import { RANGE_CARDS } from "@/lib/site-data";
 // plain <a> navigation matches the site's full-page nav (see layout bfcache shim).
 export default function Categories() {
   return (
-    <section id="categories" className="bg-ink-50 py-20 sm:py-24">
+    <section id="categories" className="bg-sand-100 py-20 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow="Our Range"

@@ -3,7 +3,7 @@
  *  Set the canonical site origin via NEXT_PUBLIC_SITE_URL (no trailing slash),
  *  e.g. https://www.ibcfasteners.com. It must be an absolute URL — it drives
  *  `metadataBase`, canonicals, Open Graph URLs, the sitemap and robots. */
-import { SITE } from "@/lib/site-data";
+import { SITE, LOGOS } from "@/lib/site-data";
 
 const RAW_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.ibcfasteners.com";
 // Normalise: absolute, no trailing slash.
@@ -32,7 +32,9 @@ export const siteConfig = {
   ],
   locale: "en_IN",
   // Default share image. Replace with a dedicated 1200x630 OG image when ready.
-  ogImage: "/logo-dark.png",
+  // encodeURI: the brand logo filename contains spaces, and this lands in
+  // <meta> / JSON-LD URLs that must already be escaped.
+  ogImage: encodeURI(LOGOS.dark),
   twitter: undefined as string | undefined, // e.g. "@ibcfasteners" when available
 };
 
@@ -50,7 +52,7 @@ export function organizationJsonLd() {
     name: siteConfig.name,
     alternateName: siteConfig.shortName,
     url: siteConfig.url,
-    logo: absoluteUrl("/logo-dark.png"),
+    logo: absoluteUrl(encodeURI(LOGOS.dark)),
     description: siteConfig.description,
     email: SITE.email,
     telephone: SITE.phone,
