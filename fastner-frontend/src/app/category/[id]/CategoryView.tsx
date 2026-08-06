@@ -11,6 +11,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+import FilterBar from "./FilterBar";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SectionHeading from "@/components/ui/SectionHeading";
@@ -153,45 +154,16 @@ function LeafProducts({ category }: { category: CategoryTreeNode }) {
         </span>
       </div>
 
-      <div className="mt-8 flex flex-col gap-8 lg:flex-row">
-        {/* Filter sidebar */}
-      {data && data.facets.length > 0 && (
-        <aside className="w-full shrink-0 lg:w-64">
-          <div className="rounded-2xl border border-ink-100 bg-white p-5 shadow-card">
-            <p className="font-display text-sm font-bold uppercase text-ink-900">Filters</p>
-            {data.facets.map((facet) => (
-              <div key={facet.group_id} className="mt-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-                  {facet.group_name}
-                </p>
-                <div className="mt-2 space-y-1.5">
-                  {facet.values.map((v) => (
-                    <label key={v.id} className="flex items-center gap-2 text-sm text-ink-700">
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(v.id)}
-                        onChange={() => toggle(v.id)}
-                      />
-                      {v.value}
-                      <span className="ml-auto text-xs text-ink-400">{v.count}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ))}
-            {selected.length > 0 && (
-              <button
-                onClick={() => setSelected([])}
-                className="mt-4 text-xs font-semibold text-brand-600 hover:text-brand-700"
-              >
-                Clear all
-              </button>
-            )}
-          </div>
-        </aside>
-      )}
+      {/* Filters run the full width above the results, so the grid below gets
+          the whole page and every spec group is visible at once. */}
+      <FilterBar
+        facets={data?.facets ?? []}
+        selected={selected}
+        onToggle={toggle}
+        onClear={() => setSelected([])}
+      />
 
-        {/* Product grid */}
+      <div className="mt-8">
         <ProductGrid
           isLoading={isLoading}
           items={data?.items ?? []}
@@ -237,7 +209,9 @@ function ProductGrid({
           No products {hasFilters ? "match these filters" : "in this category yet"}.
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        // Now the filters sit above rather than beside, the grid has the full
+        // page width — so it steps up to five across on wide screens.
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {items.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}

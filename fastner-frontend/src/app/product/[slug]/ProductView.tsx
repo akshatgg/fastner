@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronRight, Download, Loader2, Minus, Plus, ShoppingCart } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  Download,
+  Loader2,
+  Minus,
+  Plus,
+  ShoppingCart,
+} from "lucide-react";
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -14,6 +22,76 @@ import { downloadProductPdf } from "@/lib/product-pdf";
 import type { ProductSearchItem } from "@/features/catalog/types";
 import { useModeStore } from "@/lib/store/mode-store";
 import ProductReviews from "./ProductReviews";
+import ProductTabs from "./ProductTabs";
+
+/** The spec key that actually holds a bullet list rather than a value. Matched
+ *  case- and separator-insensitively, since it is authored in the seed data. */
+const KEY_FEATURES = "keyfeatures";
+
+/**
+ * The spec series as authored in the client's product-detailing sheet.
+ *
+ * The API cannot give us this order: `specifications` is a Postgres JSONB
+ * column, and JSONB re-sorts object keys by length then bytewise — so whatever
+ * order the seed writes, the spec block arrives here as "Grade, Pitch, Finish,
+ * Material, …". Restoring the authored order client-side is what keeps the
+ * table reading the way the sheet does. Keys not listed here (a future product
+ * family) keep their incoming order and follow the known ones.
+ */
+const SPEC_ORDER = [
+  "IBC Part Number",
+  "Thread Size",
+  "Length (L)",
+  "Pitch",
+  "Material",
+  "Finish",
+  "Socket Size (J)",
+  "Manufacturing Standard",
+  "Grade",
+  "Weight per 100 Units",
+  "Shipping Destinations",
+  "Weight (100 items)",
+].map((k) => k.toLowerCase().replace(/[\s_-]/g, ""));
+
+/**
+ * Split a product's `specifications` into its key-feature bullets and the
+ * remaining rows for the spec table. Features arrive as a JSON array, but a
+ * comma-joined string is accepted too so an admin-typed value still lists
+ * correctly instead of rendering as one long line.
+ */
+function splitKeyFeatures(specifications: Record<string, unknown> | undefined) {
+  const entries = specifications ? Object.entries(specifications) : [];
+  const norm = (k: string) => k.toLowerCase().replace(/[\s_-]/g, "");
+
+  const hit = entries.find(([k]) => norm(k) === KEY_FEATURES);
+  const raw = hit?.[1];
+
+  const keyFeatures = (
+    Array.isArray(raw)
+      ? raw.map(String)
+      : typeof raw === "string"
+        ? raw.split(",")
+        : []
+  )
+    .map((f) => f.trim())
+    .filter(Boolean);
+
+  const rest = entries.filter(([k]) => norm(k) !== KEY_FEATURES);
+  const rank = (k: string) => {
+    const i = SPEC_ORDER.indexOf(norm(k));
+    return i === -1 ? SPEC_ORDER.length : i;
+  };
+
+  return {
+    keyFeatures,
+    // Stable sort: known keys take the sheet's series, unknown keys keep the
+    // order they arrived in and sit after them.
+    specs: rest
+      .map((entry, i) => ({ entry, i }))
+      .sort((a, b) => rank(a.entry[0]) - rank(b.entry[0]) || a.i - b.i)
+      .map((x) => x.entry),
+  };
+}
 
 export default function ProductView({ slug }: { slug: string }) {
   const { data: product, isLoading, isError } = usePublicProduct(slug);
@@ -24,7 +102,9 @@ export default function ProductView({ slug }: { slug: string }) {
   const mode = useModeStore((s) => s.mode);
 
   const primary = product?.categories.find((c) => c.is_primary) ?? product?.categories[0];
-  const specs = product ? Object.entries(product.specifications) : [];
+  // "Key Features" is a list, not a value — it reads as a comma run-on in the
+  // spec table, so it is lifted out and shown as its own checked list above.
+  const { keyFeatures, specs } = splitKeyFeatures(product?.specifications);
 
   const isB2b = mode === "b2b";
   const price = product ? (isB2b ? product.price_b2b : product.price_b2c) : null;
@@ -118,10 +198,29 @@ export default function ProductView({ slug }: { slug: string }) {
                     {product.name}
                   </h1>
                   {product.sku && (
-                    <p className="mt-1 text-sm text-ink-400">SKU: {product.sku}</p>
+                    <p className="mt-1 text-sm text-ink-400">
+                      Part Number: {product.sku}
+                    </p>
                   )}
-                  {product.short_description && (
-                    <p className="mt-3 text-ink-600">{product.short_description}</p>
+
+                  {keyFeatures.length > 0 && (
+                    <div className="mt-5">
+                      <h2 className="font-display text-base font-bold uppercase tracking-wide text-ink-900">
+                        Key Features
+                      </h2>
+                      <ul className="mt-3 space-y-2">
+                        {keyFeatures.map((feature) => (
+                          <li key={feature} className="flex gap-2.5 text-sm leading-relaxed text-ink-700">
+                            <Check
+                              aria-hidden
+                              strokeWidth={3}
+                              className="mt-0.5 h-4 w-4 shrink-0 text-brand-500"
+                            />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
 
                   {product.filter_values.length > 0 && (
@@ -134,22 +233,6 @@ export default function ProductView({ slug }: { slug: string }) {
                           {f.group_name}: {f.value}
                         </span>
                       ))}
-                    </div>
-                  )}
-
-                  {specs.length > 0 && (
-                    <div className="mt-6 rounded-2xl border border-ink-100 bg-white p-5">
-                      <p className="font-display text-sm font-bold uppercase text-ink-900">
-                        Specifications
-                      </p>
-                      <dl className="mt-3 divide-y divide-ink-100">
-                        {specs.map(([k, v]) => (
-                          <div key={k} className="flex justify-between py-2 text-sm">
-                            <dt className="capitalize text-ink-500">{k}</dt>
-                            <dd className="font-medium text-ink-900">{String(v)}</dd>
-                          </div>
-                        ))}
-                      </dl>
                     </div>
                   )}
 
@@ -275,16 +358,22 @@ export default function ProductView({ slug }: { slug: string }) {
                 </div>
               </div>
 
-              {product.description && (
-                <div className="mt-10 rounded-2xl border border-ink-100 bg-white p-6">
-                  <p className="font-display text-sm font-bold uppercase text-ink-900">
-                    Description
-                  </p>
-                  <ProductDescription text={product.description} />
-                </div>
-              )}
-
-              <ProductReviews slug={slug} />
+              {/* Everything below the buy box — specs + drawing, the written
+                  description, and reviews — lives in one tabbed panel. */}
+              <ProductTabs
+                productName={product.name}
+                specs={specs}
+                details={
+                  product.description ? (
+                    <ProductDescription text={product.description} />
+                  ) : (
+                    <p className="text-sm text-ink-400">
+                      No description recorded for this product yet.
+                    </p>
+                  )
+                }
+                reviews={<ProductReviews slug={slug} />}
+              />
 
               <RelatedProducts slug={slug} />
             </>

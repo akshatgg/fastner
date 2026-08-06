@@ -186,7 +186,9 @@ function CartRow({ item, mode }: { item: CartItem; mode: "b2c" | "b2b" }) {
         >
           {item.name}
         </Link>
-        {item.sku && <p className="text-xs text-ink-400">SKU: {item.sku}</p>}
+        {item.sku && (
+          <p className="text-xs text-ink-400">Part Number: {item.sku}</p>
+        )}
         <p className="mt-0.5 text-sm text-ink-500">
           {formatPrice(item.unit_price)}
           {item.unit_price != null && " / pc"}

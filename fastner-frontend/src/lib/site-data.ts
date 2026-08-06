@@ -13,6 +13,7 @@ import {
   BadgeCheck,
   Factory,
   Hammer,
+  Ruler,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,7 +26,7 @@ export const SITE = {
   email: "sales@indbolt.com",
   emailHref: "mailto:sales@indbolt.com",
   // Short label (Contact section) + full postal address (footer).
-  address: "Bangalore",
+  address: "Bengaluru — Bommasandra",
   addressFull: "#108, 3rd Cross, Vidhyanagar, Bommasandra, Bengaluru - 560099",
   // Opens the storefront address in Google Maps.
   addressHref:
@@ -114,8 +115,12 @@ export const STATS = [
 export type RangeCard = {
   icon: LucideIcon;
   eyebrow: string;
+  /** Display title split across the two lines the homepage panel sets it on. */
+  titleLines: [string, string];
   title: string;
   subtitle: string;
+  /** Full-bleed photo behind the homepage panel. */
+  image: string;
   cta: string;
   href: string;
   range: "industrial" | "diy";
@@ -125,8 +130,12 @@ export const RANGE_CARDS: RangeCard[] = [
   {
     icon: Factory,
     eyebrow: "For business",
+    // Rendered as two display lines on the homepage panel.
+    titleLines: ["Industrial", "Supply"],
     title: "Industrial Supply",
-    subtitle: "Bulk Supply Solutions",
+    subtitle:
+      "Bulk supply solutions for OEMs, manufacturers and distributors — grades, finishes and quantities to your spec.",
+    image: "/assets/ranges/industrial-supply.png",
     cta: "Explore Products",
     href: "/industrial-supply",
     range: "industrial",
@@ -134,33 +143,66 @@ export const RANGE_CARDS: RangeCard[] = [
   {
     icon: Hammer,
     eyebrow: "For home",
+    titleLines: ["DIY &", "Home"],
     title: "DIY & Home",
-    subtitle: "Curated Range for Everyday Home Projects",
+    subtitle:
+      "A curated range for everyday home projects — the right fixings, sorted and boxed, no guesswork.",
+    image: "/assets/ranges/diy-home.png",
     cta: "Explore Products",
     href: "/diy-home",
     range: "diy",
   },
 ];
 
+export type Capability = { icon: LucideIcon; title: string; caption: string };
+
+/** The four proof points in the dark bar directly under the hero. Short enough
+ *  that all four sit on one row — keep titles to ~14 characters. */
+export const CAPABILITIES: Capability[] = [
+  {
+    icon: ShieldCheck,
+    title: "ISO 9001:2015",
+    caption: "Certified quality system",
+  },
+  { icon: Ruler, title: "M1.6 → M80", caption: "Widest size range stocked" },
+  { icon: BadgeCheck, title: "BS · IS · DIN", caption: "Standards compliant" },
+  { icon: Truck, title: "Nationwide", caption: "Dispatch to your timeline" },
+];
+
 /** The three steps in the homepage "How it works" section (VII). Ordered — the
- *  numbers carry the sequence, so keep them in order. */
-export type HowStep = { num: string; title: string; body: string };
+ *  numbers carry the sequence, so keep them in order. Each step is illustrated
+ *  by a photograph of that stage actually happening. */
+export type HowStep = {
+  num: string;
+  title: string;
+  body: string;
+  image: string;
+  imageAlt: string;
+};
 
 export const HOW_IT_WORKS_STEPS: HowStep[] = [
   {
     num: "01",
     title: "Talk to Our Expert",
     body: "Tell us what you need, along with your application, quantity or specifications.",
+    image: "/assets/how-it-works/step-1-consult.png",
+    imageAlt:
+      "An IBC sales engineer taking a customer enquiry by phone at the counter",
   },
   {
     num: "02",
     title: "Get the Right Solution",
     body: "Our team looks into the requirement and recommends the right fastener, grade, size and finish best suited for you.",
+    image: "/assets/how-it-works/step-2-specify.png",
+    imageAlt:
+      "An IBC engineer checking a bolt against a bracket with vernier calipers",
   },
   {
     num: "03",
     title: "Delivered to Your Timeline",
     body: "We understand urgency and work to meet the timeline you need.",
+    image: "/assets/how-it-works/step-3-dispatch.png",
+    imageAlt: "IBC cartons being loaded onto a truck for dispatch",
   },
 ];
 
@@ -251,17 +293,6 @@ export const HERO_SLIDES: HeroSlide[] = [
     },
   },
   {
-    src: "/assets/banners/2.png",
-    alt: "Smart fastener boxes for everyday fixes — curated IBC fastener kits for everyday needs",
-    bg: "#141414",
-    cta: {
-      label: "Shop Fastener Kits",
-      href: "#categories",
-      Icon: ShoppingCart,
-      className: "bg-brand-500/85 ring-white/40 hover:bg-brand-500",
-    },
-  },
-  {
     src: "/assets/banners/3.png",
     alt: "Scale your procurement with confidence — bulk fastening solutions for manufacturers and distributors",
     bg: "#141414",
@@ -271,6 +302,17 @@ export const HERO_SLIDES: HeroSlide[] = [
       href: "#contact",
       Icon: Phone,
       className: "bg-white/20 ring-white/50 hover:bg-white/35",
+    },
+  },
+  {
+    src: "/assets/banners/2.png",
+    alt: "Smart fastener boxes for everyday fixes — curated IBC fastener kits for everyday needs",
+    bg: "#141414",
+    cta: {
+      label: "Shop Fastener Kits",
+      href: "#categories",
+      Icon: ShoppingCart,
+      className: "bg-brand-500/85 ring-white/40 hover:bg-brand-500",
     },
   },
   {

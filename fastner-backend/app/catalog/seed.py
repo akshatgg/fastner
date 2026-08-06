@@ -131,6 +131,7 @@ def _upsert_product(
         )
     )
     if existing is not None:
+        existing.position = position  # keep sheet ordering in sync
         return existing, False
 
     # Prefix the category slug for readability + near-global uniqueness, then
@@ -141,7 +142,11 @@ def _upsert_product(
         n += 1
         slug = f"{base}-{n}"
 
-    product = Product(name=name, slug=slug, is_active=True)
+    # `Product.position` — not the category link's — is what the storefront
+    # listing sorts by (and what admin drag-reorder writes). Without it every
+    # product sits at 0 and the list silently falls back to alphabetical,
+    # losing the sheet's order.
+    product = Product(name=name, slug=slug, is_active=True, position=position)
     db.add(product)
     db.flush()  # assign id for the category link
     db.add(
@@ -288,6 +293,7 @@ def _upsert_detailed_product(
         existing.short_description = record.get("short_description")
         existing.description = record.get("description")
         existing.specifications = specs
+        existing.position = position  # keep sheet ordering in sync
         _ensure_primary_link(db, existing, category, position)
         return existing, False
 
@@ -299,6 +305,9 @@ def _upsert_detailed_product(
         description=record.get("description"),
         specifications=specs,
         is_active=True,
+        # See `_ensure_product`: the storefront sorts on Product.position, so
+        # the sheet's row order has to land here, not just on the link.
+        position=position,
     )
     db.add(product)
     db.flush()  # assign id for the category link

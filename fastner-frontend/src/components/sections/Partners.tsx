@@ -1,10 +1,13 @@
 import type { CSSProperties } from "react";
-import { PARTNERS, type Partner } from "@/lib/site-data";
-import SectionHeading from "@/components/ui/SectionHeading";
 
+import { PARTNERS, type Partner } from "@/lib/site-data";
+import Eyebrow from "@/components/ui/Eyebrow";
+
+/** One logo cell. The cells butt together across hairlines rather than sitting
+ *  as separate cards — the strip reads as a single rule of brands. */
 function LogoTile({ partner }: { partner: Partner }) {
   return (
-    <div className="flex h-32 w-60 shrink-0 items-center justify-center rounded-xl bg-white p-6 shadow-card ring-1 ring-ink-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-lift sm:h-36 sm:w-72 lg:w-80 xl:w-96">
+    <div className="flex h-28 w-52 shrink-0 items-center justify-center border-r border-ink-100 p-7 sm:h-33 sm:w-70">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={partner.image}
@@ -17,37 +20,43 @@ function LogoTile({ partner }: { partner: Partner }) {
 }
 
 export default function Partners() {
-  // Only one set of the (few) partners per half — large tiles mean the logos
-  // span the screen, so no logo is ever visible twice at once. Two identical
-  // halves let the track loop by -50% with no seam.
+  // Two identical halves sit side by side so the track can loop by -50% with
+  // no seam; the second is hidden from assistive tech.
   return (
-    <section id="partners" className="bg-sand-100 py-16 sm:py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHeading
-          eyebrow="Brands We Stock"
-          title="Quality Starts with the Right Brand"
-          description="Supplying genuine products from industry-leading brands."
-        />
+    <section id="partners" className="bg-white py-16 sm:py-20">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-center sm:gap-10">
+          <div>
+            <Eyebrow>Brands We Stock</Eyebrow>
+            <h2 className="mt-3 font-display text-[28px] font-bold uppercase leading-[1.05] tracking-[-0.005em] text-ink-950 sm:text-4xl lg:text-[40px]">
+              Quality starts with the right brand
+            </h2>
+          </div>
+          <p className="max-w-xs text-[15px] leading-[1.7] text-ink-500">
+            Supplying genuine products from industry-leading brands.
+          </p>
+        </div>
       </div>
 
-      <div className="group relative mt-12 overflow-hidden">
+      <div className="relative mt-10 overflow-hidden border-y border-ink-100 sm:mt-11">
+        {/* The strip sits on solid white, so colour-matched edge fades are exact. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-sand-100 to-transparent sm:w-24"
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-white to-transparent sm:w-30"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-sand-100 to-transparent sm:w-24"
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-white to-transparent sm:w-30"
         />
 
         <div
-          className="flex w-max animate-marquee group-hover:[animation-play-state:paused]"
+          className="group flex w-max animate-marquee hover:[animation-play-state:paused]"
           style={{ "--marquee-duration": "45s" } as CSSProperties}
         >
           {[0, 1].map((half) => (
             <div
               key={half}
-              className="flex shrink-0 items-center gap-8 pr-8 sm:gap-12 sm:pr-12"
+              className="flex shrink-0 items-center"
               aria-hidden={half === 1}
             >
               {PARTNERS.map((partner) => (

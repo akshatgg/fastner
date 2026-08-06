@@ -495,7 +495,9 @@ function LeafProductList({
                 </span>
               )}
             </div>
-            {p.sku && <span className="text-xs text-ink-400">SKU: {p.sku}</span>}
+            {p.sku && (
+              <span className="text-xs text-ink-400">Part Number: {p.sku}</span>
+            )}
           </div>
 
           <span className="ml-auto whitespace-nowrap text-sm font-semibold text-ink-700">

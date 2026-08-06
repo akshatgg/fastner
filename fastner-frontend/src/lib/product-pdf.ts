@@ -1,7 +1,7 @@
 /** Build and download a product spec sheet as a PDF, client-side.
  *
- * Captures everything shown on the product page: name, SKU, category trail,
- * short description, attributes (filter values), the full specifications table,
+ * Captures everything shown on the product page: name, part number, category trail,
+ * key features, attributes (filter values), the full specifications table,
  * B2C/B2B pricing, and the long description — plus the primary image when it
  * can be fetched. Uses jsPDF (loaded lazily, browser-only); no server round-trip. */
 import { SITE, LOGOS } from "@/lib/site-data";
@@ -174,7 +174,7 @@ export async function downloadProductPdf(product: Product): Promise<void> {
     text(trail.join("  ›  "), { size: 9, color: MUTED, gap: 2 });
   }
   if (product.sku) {
-    text(`SKU: ${product.sku}`, { size: 9, color: MUTED, gap: 2 });
+    text(`Part Number: ${product.sku}`, { size: 9, color: MUTED, gap: 2 });
   }
   y += 6;
 
@@ -201,8 +201,28 @@ export async function downloadProductPdf(product: Product): Promise<void> {
     }
   }
 
-  if (product.short_description) {
-    text(product.short_description, { size: 11, color: BODY });
+  // ----- key features -----
+  // Lifted out of the specifications table for the same reason as on the
+  // product page: the value is a list, and a table cell turns it into one
+  // unreadable comma-joined line.
+  const norm = (k: string) => k.toLowerCase().replace(/[\s_-]/g, "");
+  const allSpecs = Object.entries(product.specifications ?? {});
+  const rawFeatures = allSpecs.find(([k]) => norm(k) === "keyfeatures")?.[1];
+  const keyFeatures = (
+    Array.isArray(rawFeatures)
+      ? rawFeatures.map(String)
+      : typeof rawFeatures === "string"
+        ? rawFeatures.split(",")
+        : []
+  )
+    .map((f) => f.trim())
+    .filter(Boolean);
+
+  if (keyFeatures.length > 0) {
+    section("Key Features");
+    for (const f of keyFeatures) {
+      text(`•  ${f}`, { size: 10, gap: 2 });
+    }
   }
 
   // ----- attributes (filter values) -----
@@ -214,7 +234,7 @@ export async function downloadProductPdf(product: Product): Promise<void> {
   }
 
   // ----- specifications table (zebra striped, with header row) -----
-  const specs = Object.entries(product.specifications ?? {});
+  const specs = allSpecs.filter(([k]) => norm(k) !== "keyfeatures");
   if (specs.length > 0) {
     section("Specifications");
     const labelW = contentW * 0.4;

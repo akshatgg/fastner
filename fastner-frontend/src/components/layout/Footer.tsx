@@ -7,7 +7,7 @@ function Social({ href, label, children }: { href: string; label: string; childr
     <a
       href={href}
       aria-label={label}
-      className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-ink-300 transition-colors hover:bg-brand-500 hover:text-white"
+      className="flex h-10 w-10 items-center justify-center bg-white/5 text-ink-300 transition-colors hover:bg-brand-500 hover:text-white"
     >
       {children}
     </a>
@@ -19,7 +19,9 @@ export default function Footer() {
 
   return (
     <footer className="bg-ink-950 text-ink-300">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      {/* Hazard rule closes the page the same way it caps the hero. */}
+      <div aria-hidden className="bg-hazard h-1.5 w-full" />
+      <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-12">
           {/* Brand */}
           <div className="lg:col-span-4">
@@ -54,7 +56,7 @@ export default function Footer() {
 
           {/* Quick links */}
           <div className="lg:col-span-2">
-            <h3 className="font-display text-sm font-bold uppercase tracking-wider text-white">
+            <h3 className="font-display text-sm font-bold uppercase tracking-[0.08em] text-white">
               Company
             </h3>
             <ul className="mt-4 space-y-3 text-sm">
@@ -73,7 +75,7 @@ export default function Footer() {
 
           {/* Help & Information */}
           <div className="lg:col-span-3">
-            <h3 className="font-display text-sm font-bold uppercase tracking-wider text-white">
+            <h3 className="font-display text-sm font-bold uppercase tracking-[0.08em] text-white">
               Help &amp; Information
             </h3>
             <ul className="mt-4 space-y-3 text-sm">
@@ -92,7 +94,7 @@ export default function Footer() {
 
           {/* Contact */}
           <div className="lg:col-span-3">
-            <h3 className="font-display text-sm font-bold uppercase tracking-wider text-white">
+            <h3 className="font-display text-sm font-bold uppercase tracking-[0.08em] text-white">
               Get in touch
             </h3>
             <ul className="mt-4 space-y-4 text-sm">

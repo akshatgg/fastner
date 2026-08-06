@@ -1,76 +1,68 @@
 "use client";
 
 import { useMemo } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Factory } from "lucide-react";
 
 import { usePublicIndustries } from "@/features/industries/queries";
-import { HexNut } from "@/components/ui/FastenerArt";
+import Eyebrow from "@/components/ui/Eyebrow";
 
-type Tile = { key: string; name: string; image: string | null; blurb: string | null };
+type Tile = { key: string; name: string; blurb: string | null };
 
-/** One sector card — photo on top, then name, blurb and a "Learn more" cue.
- *  When no photo is set the image area is a branded "sector plate" (ink gradient
- *  + a faint fastener glyph + the sector initial) so the card still reads as
- *  designed, not broken. Add a photo in /admin/industries for the full look. */
-function IndustryCard({ tile }: { tile: Tile }) {
+/** Row transition — a long, soft settle shared by every animated part. */
+const EASE = "duration-[520ms] ease-[cubic-bezier(0.22,1,0.36,1)]";
+
+/** One sector, as an index row: number, name, blurb, and an arrow plate that
+ *  fills on hover. The sector photo is deliberately unused here — the index
+ *  reads as a spec sheet, and a row of thumbnails would fight the numerals. */
+function SectorRow({ tile, num }: { tile: Tile; num: string }) {
   return (
-    <a
-      href="#contact"
-      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-ink-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-lift"
-    >
-      <div className="relative aspect-[16/10] overflow-hidden">
-        {tile.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={tile.image}
-            alt={tile.name}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-            draggable={false}
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-ink-900 to-ink-950">
-            <HexNut
-              aria-hidden
-              className="absolute -right-6 -top-6 h-40 w-40 rotate-12 text-white/[0.05]"
-            />
-            <span className="font-display text-6xl font-bold text-white/25">
-              {tile.name.trim().charAt(0).toUpperCase()}
-            </span>
-          </div>
-        )}
-        {/* Brand accent that widens on hover — the one moving part per card. */}
-        <span className="absolute bottom-0 left-0 h-1 w-12 bg-brand-500 transition-all duration-300 group-hover:w-full" />
-      </div>
-
-      <div className="flex flex-1 flex-col p-6">
-        <h3 className="font-display text-xl font-bold uppercase tracking-wide text-ink-900 sm:text-2xl">
-          {tile.name}
-        </h3>
-        {tile.blurb && (
-          <p className="mt-2 flex-1 text-sm leading-relaxed text-ink-500 sm:text-base">
-            {tile.blurb}
-          </p>
-        )}
-        <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-brand-600">
-          Learn more
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+    <li className="border-b border-ink-950/15">
+      <a
+        href="#contact"
+        className={`group grid grid-cols-[56px_minmax(0,1fr)_44px] items-center gap-4 py-6 pl-1 outline-none transition-[background,box-shadow] hover:bg-white/55 focus-visible:bg-white/55 sm:grid-cols-[96px_minmax(0,1fr)_48px] sm:gap-5 sm:py-7 ${EASE} shadow-[inset_0_0_0_0_var(--color-brand-500)] hover:shadow-[inset_3px_0_0_0_var(--color-brand-500)] focus-visible:shadow-[inset_3px_0_0_0_var(--color-brand-500)]`}
+      >
+        <span
+          aria-hidden
+          className={`font-display text-[30px] font-bold tabular-nums leading-none tracking-[0.01em] text-sand-300 transition-[color,transform] group-hover:translate-x-1.5 group-hover:text-brand-500 group-focus-visible:translate-x-1.5 group-focus-visible:text-brand-500 sm:text-[44px] ${EASE}`}
+        >
+          {num}
         </span>
-      </div>
-    </a>
+        <span className="flex flex-col gap-1.5">
+          <span
+            className={`font-display text-xl font-bold uppercase leading-[1.05] tracking-[0.005em] text-ink-950 transition-transform group-hover:translate-x-1.5 group-focus-visible:translate-x-1.5 sm:text-[32px] ${EASE}`}
+          >
+            {tile.name}
+          </span>
+          {tile.blurb && (
+            <span className="max-w-lg text-sm leading-[1.6] text-ink-500 sm:text-[15px]">
+              {tile.blurb}
+            </span>
+          )}
+        </span>
+        <span
+          className={`flex h-10 w-10 items-center justify-center border border-ink-950/15 text-brand-500 transition-[background,color,border-color,transform] group-hover:translate-x-1 group-hover:border-brand-500 group-hover:bg-brand-500 group-hover:text-white group-focus-visible:border-brand-500 group-focus-visible:bg-brand-500 group-focus-visible:text-white sm:h-11 sm:w-11 ${EASE}`}
+        >
+          <ArrowRight className="h-4.5 w-4.5" />
+        </span>
+      </a>
+    </li>
   );
 }
 
-/** Skeleton placeholder shown while the live industries load. */
-function CardSkeleton() {
+/** Placeholder rows shown while the live sectors load — same geometry as the
+ *  real row, so the list does not jump when data arrives. */
+function RowSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl ring-1 ring-ink-100">
-      <div className="aspect-[16/10] animate-pulse bg-ink-100" />
-      <div className="space-y-3 p-6">
-        <div className="h-5 w-2/3 animate-pulse rounded bg-ink-100" />
-        <div className="h-4 w-full animate-pulse rounded bg-ink-100" />
-        <div className="h-4 w-4/5 animate-pulse rounded bg-ink-100" />
+    <li className="border-b border-ink-950/15">
+      <div className="grid grid-cols-[56px_minmax(0,1fr)_44px] items-center gap-4 py-6 pl-1 sm:grid-cols-[96px_minmax(0,1fr)_48px] sm:gap-5 sm:py-7">
+        <div className="h-8 w-10 animate-pulse rounded bg-ink-950/10 sm:h-10" />
+        <div className="space-y-2.5">
+          <div className="h-6 w-2/5 animate-pulse rounded bg-ink-950/10 sm:h-7" />
+          <div className="h-4 w-4/5 animate-pulse rounded bg-ink-950/10" />
+        </div>
+        <div className="h-10 w-10 animate-pulse bg-ink-950/10 sm:h-11 sm:w-11" />
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -83,59 +75,74 @@ export default function Industries() {
       (data ?? []).map((i) => ({
         key: i.id,
         name: i.name,
-        image: i.image_url,
         blurb: i.blurb,
       })),
     [data],
   );
 
   return (
-    <section id="industries" className="bg-white py-20 sm:py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)] lg:items-start lg:gap-16">
-          {/* Left — heading block. Sticks alongside the cards on large screens. */}
-          <div className="lg:sticky lg:top-28">
-            <span className="mb-4 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-brand-600">
-              <span className="h-px w-6 bg-brand-500" />
-              Sectors We Supply
-            </span>
-            <h2 className="font-display text-4xl font-bold uppercase leading-[1.05] tracking-tight text-ink-900 sm:text-5xl">
-              Powering the Industries That Build Tomorrow
+    <section
+      id="industries"
+      className="relative overflow-hidden bg-sand-50 py-20 sm:py-26"
+    >
+      {/* Engineering grid, lifted by a soft light from the top-left. */}
+      <div aria-hidden className="bg-grid-ink absolute inset-0" />
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-[radial-gradient(120%_80%_at_15%_0%,rgb(255_255_255/0.9)_0%,rgb(246_244_242/0)_60%)]"
+      />
+
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-18">
+          {/* Left — heading block. Rides alongside the index on large screens. */}
+          <div className="lg:sticky lg:top-30">
+            <Eyebrow>Sectors We Supply</Eyebrow>
+            <h2 className="mt-4 text-balance font-display text-[34px] font-bold uppercase leading-none tracking-[-0.01em] text-ink-950 sm:text-5xl lg:text-[56px]">
+              Powering the industries that build tomorrow
             </h2>
-            <p className="mt-5 text-lg leading-relaxed text-ink-500">
-              Trusted by the industries that demand precision.
+            <p className="mt-5 max-w-sm text-[17px] leading-[1.7] text-ink-500">
+              Trusted by the industries that demand precision — from a single
+              specialty size to a standing bulk schedule.
             </p>
             <a
               href="#contact"
-              className="group mt-8 inline-flex items-center gap-2 rounded-md bg-brand-500 px-7 py-3.5 text-sm font-semibold text-white transition-all hover:bg-brand-600"
+              className="mt-9 inline-flex items-center gap-2.5 bg-brand-500 px-7 py-4 text-[13px] font-bold uppercase tracking-[0.1em] text-white transition-colors hover:bg-brand-600"
             >
               Talk to our team
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="h-4 w-4" />
             </a>
+            <div className="mt-10 flex items-center gap-3 border-t border-ink-950/12 pt-5">
+              <Factory
+                aria-hidden
+                strokeWidth={1.5}
+                className="h-5 w-5 shrink-0 text-steel-500"
+              />
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-steel-500">
+                Sectors are managed in the admin dashboard
+              </span>
+            </div>
           </div>
 
-          {/* Right — sector cards. */}
-          <div>
+          {/* Right — the sector index. */}
+          <ol className="flex flex-col border-t border-ink-950/15">
             {isLoading ? (
-              <div className="grid gap-6 sm:grid-cols-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <CardSkeleton key={i} />
-                ))}
-              </div>
+              Array.from({ length: 4 }).map((_, i) => <RowSkeleton key={i} />)
             ) : tiles.length === 0 ? (
-              <div className="flex h-full min-h-56 items-center justify-center rounded-2xl border border-dashed border-ink-200 p-8 text-center">
-                <p className="text-sm text-ink-400">
-                  Sectors appear here once added in the admin dashboard.
+              <li className="py-14 text-center">
+                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-steel-500">
+                  Sectors appear here once added in the admin dashboard
                 </p>
-              </div>
+              </li>
             ) : (
-              <div className="grid gap-6 sm:grid-cols-2">
-                {tiles.map((tile) => (
-                  <IndustryCard key={tile.key} tile={tile} />
-                ))}
-              </div>
+              tiles.map((tile, i) => (
+                <SectorRow
+                  key={tile.key}
+                  tile={tile}
+                  num={String(i + 1).padStart(2, "0")}
+                />
+              ))
             )}
-          </div>
+          </ol>
         </div>
       </div>
     </section>
