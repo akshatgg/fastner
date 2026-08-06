@@ -60,6 +60,17 @@ class Category(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default=text("true")
     )
+    # Storefront range this category belongs to: "industrial" (bulk/OEM supply,
+    # the default) or "diy" (home & DIY). A subcategory always inherits its
+    # parent's range — only top-level categories are assigned one directly, and
+    # products inherit their range from the category they're filed under.
+    range: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="industrial",
+        server_default=text("'industrial'"),
+        index=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

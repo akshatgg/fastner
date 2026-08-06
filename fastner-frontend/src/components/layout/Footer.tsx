@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Phone, Mail, MapPin } from "lucide-react";
-import { SITE, NAV_LINKS, CATEGORIES } from "@/lib/site-data";
+import { SITE, NAV_LINKS, HELP_LINKS, FOOTER_BLURB } from "@/lib/site-data";
 
 function Social({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
   return (
@@ -31,9 +31,7 @@ export default function Footer() {
               className="h-12 w-auto"
             />
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-ink-400">
-              {SITE.tagline}. IBC supplies genuine-quality industrial fasteners
-              and tools to manufacturers, builders and workshops — with genuine
-              quality and fast shipping.
+              {FOOTER_BLURB}
             </p>
             <div className="mt-6 flex gap-3">
               <Social href="#" label="Instagram">
@@ -73,19 +71,19 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Categories */}
+          {/* Help & Information */}
           <div className="lg:col-span-3">
             <h3 className="font-display text-sm font-bold uppercase tracking-wider text-white">
-              Products
+              Help &amp; Information
             </h3>
-            <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-              {CATEGORIES.slice(0, 8).map((cat) => (
-                <li key={cat.name}>
+            <ul className="mt-4 space-y-3 text-sm">
+              {HELP_LINKS.map((link) => (
+                <li key={link.label}>
                   <a
-                    href="#categories"
+                    href={link.href}
                     className="text-ink-400 transition-colors hover:text-brand-500"
                   >
-                    {cat.name}
+                    {link.label}
                   </a>
                 </li>
               ))}
@@ -110,9 +108,16 @@ export default function Footer() {
                   {SITE.email}
                 </a>
               </li>
-              <li className="flex items-start gap-3">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
-                {SITE.address}
+              <li>
+                <a
+                  href={SITE.addressHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-3 hover:text-brand-500"
+                >
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
+                  {SITE.addressFull}
+                </a>
               </li>
             </ul>
           </div>

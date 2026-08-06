@@ -25,14 +25,15 @@ export default function Contact() {
               className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand-600/30 blur-3xl"
             />
             <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-400">
-              Get in touch
+              Let&rsquo;s talk
             </span>
             <h2 className="mt-3 font-display text-3xl font-bold uppercase leading-tight">
-              Request a quote or bulk pricing
+              Tell us what you need
             </h2>
             <p className="mt-4 text-ink-300">
-              Tell us what you need — our team will get back with availability and
-              the best trade pricing, usually within one business day.
+              Looking for a specific fastener or planning a bulk order? Share your
+              requirements with us and our team will help you with availability,
+              pricing and the right product for your application.
             </p>
 
             <ul className="mt-10 space-y-5">

@@ -11,6 +11,8 @@ import {
   Handshake,
   ShieldCheck,
   BadgeCheck,
+  Factory,
+  Hammer,
   type LucideIcon,
 } from "lucide-react";
 
@@ -20,9 +22,14 @@ export const SITE = {
   tagline: "Fastening Solutions, Delivered",
   phone: "+91 98765 43210",
   phoneHref: "tel:+919876543210",
-  email: "sales@ibcfasteners.com",
-  emailHref: "mailto:sales@ibcfasteners.com",
-  address: "India",
+  email: "sales@indbolt.com",
+  emailHref: "mailto:sales@indbolt.com",
+  // Short label (Contact section) + full postal address (footer).
+  address: "Bangalore",
+  addressFull: "#108, 3rd Cross, Vidhyanagar, Bommasandra, Bengaluru - 560099",
+  // Opens the storefront address in Google Maps.
+  addressHref:
+    "https://www.google.com/maps/search/?api=1&query=%23108,+3rd+Cross,+Vidhyanagar,+Bommasandra,+Bengaluru+-+560099",
 };
 
 export const NAV_LINKS = [
@@ -31,6 +38,19 @@ export const NAV_LINKS = [
   { label: "Industries", href: "/#industries" },
   { label: "About", href: "/about-us" },
   { label: "Contact", href: "/#contact" },
+];
+
+/** Intro blurb shown under the logo in the footer. */
+export const FOOTER_BLURB =
+  "Our one-stop-shop for all your fastening needs. Browse our wide range of products and services and experience exceptional quality and customer service.";
+
+/** Footer "Help & Information" column. Delivery/Returns point at support until
+ *  they get dedicated pages. */
+export const HELP_LINKS = [
+  { label: "Order Tracker", href: "/orders" },
+  { label: "Delivery", href: "/support" },
+  { label: "Returns", href: "/support" },
+  { label: "About Us", href: "/about-us" },
 ];
 
 /** Category names for the footer's "Products" quick links. The homepage
@@ -63,6 +83,7 @@ export const PARTNERS: Partner[] = [
   { name: "fischer", image: "/assets/Partners/fischer.png" },
   { name: "RAAJ", image: "/assets/Partners/raaj.png" },
   { name: "HILTI", image: "/assets/Partners/hilti.png" },
+  { name: "APL", image: "/assets/Partners/apl.png" },
 ];
 
 export const STATS = [
@@ -72,12 +93,61 @@ export const STATS = [
   { value: "Genuine", label: "Quality fasteners" },
 ];
 
-/** Selling points listed in the dark About section. */
-export const ABOUT_POINTS = [
-  "Bulk & OEM orders, made easy",
-  "Fast, reliable nationwide dispatch",
-  "Genuine, grade-marked fasteners",
-  "A team that actually knows fasteners",
+/** The two catalog ranges shown on the homepage "Our Range" section. Each card
+ *  links to its dedicated storefront page (`/industrial-supply`, `/diy-home`),
+ *  which lists the categories tagged with that range. `range` matches the
+ *  backend `Category.range` value. */
+export type RangeCard = {
+  icon: LucideIcon;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  cta: string;
+  href: string;
+  range: "industrial" | "diy";
+};
+
+export const RANGE_CARDS: RangeCard[] = [
+  {
+    icon: Factory,
+    eyebrow: "For business",
+    title: "Industrial Supply",
+    subtitle: "Bulk Supply Solutions",
+    cta: "Explore Products",
+    href: "/industrial-supply",
+    range: "industrial",
+  },
+  {
+    icon: Hammer,
+    eyebrow: "For home",
+    title: "DIY & Home",
+    subtitle: "Curated Range for Everyday Home Projects",
+    cta: "Explore Products",
+    href: "/diy-home",
+    range: "diy",
+  },
+];
+
+/** The three steps in the homepage "How it works" section (VII). Ordered — the
+ *  numbers carry the sequence, so keep them in order. */
+export type HowStep = { num: string; title: string; body: string };
+
+export const HOW_IT_WORKS_STEPS: HowStep[] = [
+  {
+    num: "01",
+    title: "Talk to Our Expert",
+    body: "Tell us what you need, along with your application, quantity or specifications.",
+  },
+  {
+    num: "02",
+    title: "Get the Right Solution",
+    body: "Our team looks into the requirement and recommends the right fastener, grade, size and finish best suited for you.",
+  },
+  {
+    num: "03",
+    title: "Delivered to Your Timeline",
+    body: "We understand urgency and work to meet the timeline you need.",
+  },
 ];
 
 export type ContactItem = {
@@ -91,7 +161,7 @@ export type ContactItem = {
 export const CONTACT_ITEMS: ContactItem[] = [
   { icon: Phone, label: "Call us", value: SITE.phone, href: SITE.phoneHref },
   { icon: Mail, label: "Email us", value: SITE.email, href: SITE.emailHref },
-  { icon: MapPin, label: "Visit us", value: SITE.address, href: undefined },
+  { icon: MapPin, label: "Visit us", value: SITE.address, href: SITE.addressHref },
 ];
 
 export type ProcessStep = { icon: LucideIcon; title: string; body: string };
@@ -150,59 +220,55 @@ export type HeroSlide = {
   caption?: HeroCaption;
 };
 
-/** Banners shown in the full-bleed hero carousel. Each is exported at 2047x921 (~20:9). */
+/** Banners shown in the full-bleed hero carousel. Each is exported at 2047x921
+ *  (~20:9). The headline and copy are baked into each image (dark left panel),
+ *  so slides carry no `caption` — they only overlay a CTA over the artwork. */
 export const HERO_SLIDES: HeroSlide[] = [
   {
-    src: "/assets/banners/slide-fasteners-2047x921.png",
-    alt: "A full range of quality fasteners — screws, bolts, nuts, washers and wall plugs",
-    bg: "#e9eef1",
-    // Empty center of the fastener ring → headline sits in the open space.
-    caption: {
-      heading: "Every Fastener You Need",
-      sub: "Screws, bolts, nuts, washers & wall plugs — quality you can build on.",
-    },
-    // Silver/teal frame → translucent teal ties into the wall-plug accents.
+    src: "/assets/banners/ibc.png",
+    alt: "Over 1 million fasteners under one roof — IBC's full range of bolts, nuts, screws, washers and anchors",
+    bg: "#141414",
+    // Dark warehouse art → translucent brand orange CTA pops.
     cta: {
-      label: "Buy Now",
+      label: "Shop the Range",
       href: "#categories",
       Icon: ShoppingCart,
-      className: "bg-accent-600/55 ring-white/40 hover:bg-accent-600/75",
+      className: "bg-brand-500/85 ring-white/40 hover:bg-brand-500",
     },
   },
   {
-    src: "/assets/banners/fastener-no-bars-2047x921.png",
-    alt: "Fastener assorted packs — high-quality fasteners in assorted packs for every need",
-    bg: "#ffffff",
-    // White banner → translucent brand orange pops.
+    src: "/assets/banners/2.png",
+    alt: "Smart fastener boxes for everyday fixes — curated IBC fastener kits for everyday needs",
+    bg: "#141414",
     cta: {
-      label: "Buy Now",
+      label: "Shop Fastener Kits",
       href: "#categories",
       Icon: ShoppingCart,
-      className: "bg-brand-500/75 ring-white/40 hover:bg-brand-500/90",
+      className: "bg-brand-500/85 ring-white/40 hover:bg-brand-500",
     },
   },
   {
-    src: "/assets/banners/bulk-order-fit-2047x921.png",
-    alt: "Bulk order also available — ideal for businesses, manufacturers and resellers",
-    bg: "#121212",
-    // Dark banner → translucent white glass.
+    src: "/assets/banners/3.png",
+    alt: "Scale your procurement with confidence — bulk fastening solutions for manufacturers and distributors",
+    bg: "#141414",
+    // Bulk / B2B poster → contact CTA in clean white glass.
     cta: {
-      label: "Buy Now",
-      href: "#categories",
-      Icon: ShoppingCart,
+      label: "Get Bulk Pricing",
+      href: "#contact",
+      Icon: Phone,
       className: "bg-white/20 ring-white/50 hover:bg-white/35",
     },
   },
   {
-    src: "/assets/banners/slide-support-2047x921.png",
-    alt: "IBC multi-lingual customer support — we speak your language",
-    bg: "#ffffff",
-    // Contact poster → "Contact Us"; dark glass reads well over the light/orange art.
+    src: "/assets/banners/4.png",
+    alt: "Quality that meets global standards — IBC is ISO 9001:2015 certified",
+    bg: "#141414",
+    // Certification poster → trust CTA into the About page.
     cta: {
-      label: "Contact Us",
-      href: "#contact",
-      Icon: Phone,
-      className: "bg-ink-950/45 ring-white/25 hover:bg-ink-950/65",
+      label: "Why Choose IBC",
+      href: "/about-us",
+      Icon: ShieldCheck,
+      className: "bg-white/20 ring-white/50 hover:bg-white/35",
     },
   },
 ];

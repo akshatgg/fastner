@@ -280,7 +280,7 @@ export default function ProductView({ slug }: { slug: string }) {
                   <p className="font-display text-sm font-bold uppercase text-ink-900">
                     Description
                   </p>
-                  <p className="mt-3 whitespace-pre-line text-ink-600">{product.description}</p>
+                  <ProductDescription text={product.description} />
                 </div>
               )}
 
@@ -293,6 +293,51 @@ export default function ProductView({ slug }: { slug: string }) {
       </main>
       <Footer />
     </>
+  );
+}
+
+/**
+ * Renders a product description, giving the `### Heading` lines (use-case
+ * sections seeded from the catalog) proper sub-headings instead of running them
+ * into the body text. Plain descriptions (no markers) fall back to paragraphs,
+ * with the first block treated as a lead line.
+ */
+function ProductDescription({ text }: { text: string }) {
+  const blocks = text
+    .split(/\n{2,}/)
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="mt-4 space-y-5">
+      {blocks.map((block, i) => {
+        if (block.startsWith("### ")) {
+          const nl = block.indexOf("\n");
+          const heading = (nl === -1 ? block.slice(4) : block.slice(4, nl)).trim();
+          const body = nl === -1 ? "" : block.slice(nl + 1).trim();
+          return (
+            <div key={i}>
+              <h3 className="font-display text-sm font-bold uppercase tracking-wide text-ink-900">
+                {heading}
+              </h3>
+              {body && <p className="mt-1.5 leading-relaxed text-ink-600">{body}</p>}
+            </div>
+          );
+        }
+        return (
+          <p
+            key={i}
+            className={
+              i === 0
+                ? "leading-relaxed font-medium text-ink-800"
+                : "leading-relaxed text-ink-600"
+            }
+          >
+            {block}
+          </p>
+        );
+      })}
+    </div>
   );
 }
 

@@ -31,7 +31,11 @@ import {
   useUpdateCategory,
 } from "@/features/catalog/queries";
 import { leafCategories } from "@/features/catalog/tree";
-import type { CategoryTreeNode, Product } from "@/features/catalog/types";
+import type {
+  CategoryRange,
+  CategoryTreeNode,
+  Product,
+} from "@/features/catalog/types";
 import { formatPrice } from "@/lib/format";
 
 const inputCls =
@@ -39,8 +43,19 @@ const inputCls =
 const labelCls = "mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-500";
 
 type CatModal =
-  | { mode: "create"; parentId: string | null; parentName?: string }
+  | {
+      mode: "create";
+      parentId: string | null;
+      parentName?: string;
+      // Range for a new top-level category (the active tab); ignored for children.
+      defaultRange?: CategoryRange;
+    }
   | { mode: "edit"; category: CategoryTreeNode };
+
+const RANGE_TABS: { value: CategoryRange; label: string }[] = [
+  { value: "industrial", label: "Industrial Supply" },
+  { value: "diy", label: "DIY & Home" },
+];
 
 function countNodes(nodes: CategoryTreeNode[]): number {
   return nodes.reduce((sum, n) => sum + 1 + countNodes(n.children), 0);
@@ -48,12 +63,16 @@ function countNodes(nodes: CategoryTreeNode[]): number {
 
 export default function CategoriesPage() {
   const { data: tree = [], isLoading } = useCategoryTree();
+  const [segment, setSegment] = useState<CategoryRange>("industrial");
   const [catModal, setCatModal] = useState<CatModal | null>(null);
   const [productLeafId, setProductLeafId] = useState<string | null>(null);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
 
   const leaves = leafCategories(tree);
-  const total = countNodes(tree);
+  // Only the roots in the active range (and their subtrees) are shown; a
+  // subtree never spans ranges, so filtering roots is enough.
+  const visibleTree = tree.filter((n) => n.range === segment);
+  const total = countNodes(visibleTree);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -76,15 +95,35 @@ export default function CategoriesPage() {
           </div>
         </div>
         <button
-          onClick={() => setCatModal({ mode: "create", parentId: null })}
+          onClick={() =>
+            setCatModal({ mode: "create", parentId: null, defaultRange: segment })
+          }
           className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-600"
         >
           <Plus className="h-4 w-4" /> New category
         </button>
       </div>
 
+      {/* Range tabs — manage the Industrial and DIY catalogs separately. */}
+      <div className="mt-6 inline-flex rounded-lg border border-ink-200 bg-white p-1">
+        {RANGE_TABS.map((t) => (
+          <button
+            key={t.value}
+            onClick={() => setSegment(t.value)}
+            aria-pressed={segment === t.value}
+            className={`rounded-md px-4 py-1.5 text-sm font-bold uppercase tracking-wide transition ${
+              segment === t.value
+                ? "bg-brand-500 text-white shadow-sm"
+                : "text-ink-500 hover:text-ink-800"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       {/* Legend / count bar */}
-      {!isLoading && tree.length > 0 && (
+      {!isLoading && visibleTree.length > 0 && (
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-ink-100 bg-ink-50/60 px-4 py-2.5 text-xs text-ink-500">
           <span className="font-semibold text-ink-700">{total} categories</span>
           <span className="flex items-center gap-1.5">
@@ -108,18 +147,23 @@ export default function CategoriesPage() {
               <div key={i} className="h-10 animate-pulse rounded-lg bg-ink-50" />
             ))}
           </div>
-        ) : tree.length === 0 ? (
+        ) : visibleTree.length === 0 ? (
           <div className="flex flex-col items-center px-3 py-14 text-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-500">
               <FolderPlus className="h-7 w-7" />
             </span>
-            <p className="mt-4 font-semibold text-ink-800">No categories yet</p>
+            <p className="mt-4 font-semibold text-ink-800">
+              No categories in the{" "}
+              {RANGE_TABS.find((t) => t.value === segment)?.label} range yet
+            </p>
             <p className="mt-1 max-w-sm text-sm text-ink-500">
-              Start by adding a top-level category like “Fasteners” or “Tools”,
-              then nest subcategories inside it.
+              Add a top-level category like “Fasteners” or “Tools”, then nest
+              subcategories inside it. Products are added to the leaf categories.
             </p>
             <button
-              onClick={() => setCatModal({ mode: "create", parentId: null })}
+              onClick={() =>
+                setCatModal({ mode: "create", parentId: null, defaultRange: segment })
+              }
               className="mt-5 inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-brand-600"
             >
               <Plus className="h-4 w-4" /> Add your first category
@@ -127,7 +171,7 @@ export default function CategoriesPage() {
           </div>
         ) : (
           <ul>
-            {tree.map((node) => (
+            {visibleTree.map((node) => (
               <CategoryRow
                 key={node.id}
                 node={node}
@@ -515,11 +559,18 @@ function CategoryForm({ modal, onDone }: { modal: CatModal; onDone: () => void }
   const create = useCreateCategory();
   const update = useUpdateCategory();
   const existing = modal.mode === "edit" ? modal.category : undefined;
+  // Only top-level categories choose a range; children always inherit it.
+  const isTopLevel =
+    modal.mode === "edit" ? modal.category.parent_id === null : modal.parentId === null;
 
   const [name, setName] = useState(existing?.name ?? "");
   const [description, setDescription] = useState(existing?.description ?? "");
   const [imageUrl, setImageUrl] = useState(existing?.image_url ?? "");
   const [isActive, setIsActive] = useState(existing?.is_active ?? true);
+  const [range, setRange] = useState<CategoryRange>(
+    existing?.range ??
+      (modal.mode === "create" ? modal.defaultRange ?? "industrial" : "industrial"),
+  );
 
   const busy = create.isPending || update.isPending;
 
@@ -531,6 +582,9 @@ function CategoryForm({ modal, onDone }: { modal: CatModal; onDone: () => void }
       description: description.trim() || null,
       image_url: imageUrl.trim() || null,
       is_active: isActive,
+      // Send range only for top-level categories; the backend derives a child's
+      // range from its parent regardless of what's sent.
+      ...(isTopLevel ? { range } : {}),
     };
     if (modal.mode === "edit") {
       await update.mutateAsync({ id: existing!.id, input: body });
@@ -552,6 +606,35 @@ function CategoryForm({ modal, onDone }: { modal: CatModal; onDone: () => void }
           autoFocus
         />
       </div>
+      {isTopLevel ? (
+        <div>
+          <label className={labelCls}>Range</label>
+          <div className="inline-flex rounded-lg border border-ink-200 bg-white p-1">
+            {RANGE_TABS.map((t) => (
+              <button
+                type="button"
+                key={t.value}
+                onClick={() => setRange(t.value)}
+                aria-pressed={range === t.value}
+                className={`rounded-md px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition ${
+                  range === t.value
+                    ? "bg-brand-500 text-white"
+                    : "text-ink-500 hover:text-ink-800"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-ink-400">
+            Which storefront range this top-level category appears in.
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-ink-400">
+          Subcategories inherit their parent&apos;s range.
+        </p>
+      )}
       <div>
         <label className={labelCls}>Description</label>
         <textarea

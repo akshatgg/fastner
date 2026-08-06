@@ -182,9 +182,13 @@ def admin_category_products(
 
 
 @public_router.get("/tree", response_model=list[schemas.CategoryTreeNode])
-def category_tree(db: Session = Depends(get_db)):
-    """The full active category tree for storefront navigation."""
-    return CatalogService(db).build_tree(active_only=True)
+def category_tree(
+    range: str | None = Query(default=None, pattern="^(industrial|diy)$"),
+    db: Session = Depends(get_db),
+):
+    """The active category tree for storefront navigation, optionally limited to
+    a single range (``industrial`` or ``diy``)."""
+    return CatalogService(db).build_tree(active_only=True, range_=range)
 
 
 @public_router.get("/products", response_model=list[schemas.ProductSitemapItem])

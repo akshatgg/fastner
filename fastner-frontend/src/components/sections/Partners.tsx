@@ -17,7 +17,7 @@ function LogoTile({ partner }: { partner: Partner }) {
 }
 
 export default function Partners() {
-  // Only one set of the (few) partners per half — large tiles mean the 4 logos
+  // Only one set of the (few) partners per half — large tiles mean the logos
   // span the screen, so no logo is ever visible twice at once. Two identical
   // halves let the track loop by -50% with no seam.
   return (
@@ -25,8 +25,8 @@ export default function Partners() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow="Brands We Stock"
-          title="Our Partners"
-          description="We supply genuine, quality-assured products from the names professionals trust."
+          title="Quality Starts with the Right Brand"
+          description="Supplying genuine products from industry-leading brands."
         />
       </div>
 

@@ -39,3 +39,30 @@ def public_settings(db: Session = Depends(get_db)):
     return schemas.PublicSettingsResponse(
         gst_rate=float(SettingsService(db).get_gst_rate())
     )
+
+
+# --- Homepage stats bar -----------------------------------------------------
+
+
+@public_router.get(
+    "/homepage-stats", response_model=list[schemas.HomepageStatPublic]
+)
+def public_homepage_stats(db: Session = Depends(get_db)):
+    """Resolved figures for the homepage "By the numbers" bar (active only)."""
+    return SettingsService(db).get_public_homepage_stats()
+
+
+@admin_router.get(
+    "/homepage-stats", response_model=list[schemas.HomepageStatAdmin]
+)
+def get_homepage_stats(db: Session = Depends(get_db)):
+    return SettingsService(db).get_admin_homepage_stats()
+
+
+@admin_router.put(
+    "/homepage-stats", response_model=list[schemas.HomepageStatAdmin]
+)
+def update_homepage_stats(
+    data: schemas.HomepageStatsUpdateRequest, db: Session = Depends(get_db)
+):
+    return SettingsService(db).update_homepage_stats(data.stats)

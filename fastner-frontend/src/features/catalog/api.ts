@@ -19,8 +19,10 @@ import type {
 
 // --- public (storefront) ---
 
-export const getPublicCategoryTree = () =>
-  apiFetch<CategoryTreeNode[]>("/catalog/tree", { auth: false });
+export const getPublicCategoryTree = (range?: "industrial" | "diy") => {
+  const suffix = range ? `?range=${range}` : "";
+  return apiFetch<CategoryTreeNode[]>(`/catalog/tree${suffix}`, { auth: false });
+};
 
 export const getCategoryProducts = (
   categoryId: string,

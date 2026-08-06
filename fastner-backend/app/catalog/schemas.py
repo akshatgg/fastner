@@ -1,9 +1,14 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 # --- categories --------------------------------------------------------------
+
+# The two storefront ranges the catalog is split into. A subcategory inherits
+# its parent's range, so only top-level categories carry a meaningful choice.
+CategoryRange = Literal["industrial", "diy"]
 
 
 class CategoryCreate(BaseModel):
@@ -15,6 +20,8 @@ class CategoryCreate(BaseModel):
     image_url: str | None = Field(default=None, max_length=1024)
     position: int = 0
     is_active: bool = True
+    # Ignored for subcategories (they inherit the parent's range).
+    range: CategoryRange = "industrial"
 
 
 class CategoryUpdate(BaseModel):
@@ -28,6 +35,8 @@ class CategoryUpdate(BaseModel):
     image_url: str | None = Field(default=None, max_length=1024)
     position: int | None = None
     is_active: bool | None = None
+    # Only honoured for top-level categories; children follow their parent.
+    range: CategoryRange | None = None
 
 
 class CategoryResponse(BaseModel):
@@ -43,6 +52,7 @@ class CategoryResponse(BaseModel):
     description: str | None
     image_url: str | None
     is_active: bool
+    range: CategoryRange = "industrial"
     is_leaf: bool = True
     created_at: datetime
     updated_at: datetime

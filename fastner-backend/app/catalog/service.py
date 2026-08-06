@@ -76,6 +76,9 @@ class CatalogService:
         slug = self._unique_category_slug(data.parent_id, base)
         path = f"{parent.path}/{slug}" if parent else slug
         depth = path.count("/")
+        # A subcategory inherits its parent's range; a top-level category takes
+        # the range chosen by the admin (defaults to "industrial").
+        range_ = parent.range if parent else data.range
 
         cat = Category(
             parent_id=data.parent_id,
@@ -87,6 +90,7 @@ class CatalogService:
             description=data.description,
             image_url=data.image_url,
             is_active=data.is_active,
+            range=range_,
         )
         self.db.add(cat)
         self.db.commit()
@@ -133,6 +137,17 @@ class CatalogService:
         if moving or renaming:
             self._recompute_subtree(cat)
 
+        # Range: a subcategory always follows its (new) parent; a root category
+        # can be reassigned directly. Any change cascades to the whole subtree.
+        if new_parent_id is not None:
+            desired_range = self._get_category(new_parent_id).range
+        elif "range" in fields and fields["range"] is not None:
+            desired_range = fields["range"]
+        else:
+            desired_range = cat.range
+        if desired_range != cat.range:
+            self._set_subtree_range(cat, desired_range)
+
         self.db.commit()
         self.db.refresh(cat)
         logger.info(
@@ -162,6 +177,16 @@ class CatalogService:
             d.path = new_path + d.path[len(old_path):]
             d.depth = d.path.count("/")
 
+    def _set_subtree_range(self, cat: Category, new_range: str) -> None:
+        """Assign ``new_range`` to ``cat`` and every descendant (matched by the
+        current path prefix) so a whole subtree always stays in one range."""
+        descendants = self.db.scalars(
+            select(Category).where(Category.path.like(f"{cat.path}/%"))
+        ).all()
+        cat.range = new_range
+        for d in descendants:
+            d.range = new_range
+
     def delete_category(self, category_id: uuid.UUID) -> None:
         cat = self._get_category(category_id)
         if self._has_children(category_id):
@@ -186,15 +211,24 @@ class CatalogService:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Category not found.")
         return cat
 
-    def list_categories(self, active_only: bool = False) -> list[Category]:
+    def list_categories(
+        self, active_only: bool = False, range_: str | None = None
+    ) -> list[Category]:
         q = select(Category).order_by(Category.depth, Category.position, Category.name)
         if active_only:
             q = q.where(Category.is_active.is_(True))
+        if range_ is not None:
+            q = q.where(Category.range == range_)
         return list(self.db.scalars(q).all())
 
-    def build_tree(self, active_only: bool = False) -> list[dict]:
-        """Assemble the flat category rows into a nested tree of dicts."""
-        cats = self.list_categories(active_only=active_only)
+    def build_tree(
+        self, active_only: bool = False, range_: str | None = None
+    ) -> list[dict]:
+        """Assemble the flat category rows into a nested tree of dicts.
+
+        ``range_`` optionally limits the tree to a single storefront range;
+        because a subtree never spans ranges, the nesting stays intact."""
+        cats = self.list_categories(active_only=active_only, range_=range_)
         leaf_ids = {c.id for c in cats} - {c.parent_id for c in cats if c.parent_id}
         nodes: dict[uuid.UUID, dict] = {}
         roots: list[dict] = []

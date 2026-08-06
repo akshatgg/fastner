@@ -1,5 +1,9 @@
 /** Types mirroring the backend `app/catalog/schemas.py` contracts. */
 
+/** The two storefront ranges the catalog is split into. A subcategory always
+ *  inherits its parent's range, so only top-level categories carry a choice. */
+export type CategoryRange = "industrial" | "diy";
+
 export type Category = {
   id: string;
   parent_id: string | null;
@@ -11,6 +15,7 @@ export type Category = {
   description: string | null;
   image_url: string | null;
   is_active: boolean;
+  range: CategoryRange;
   is_leaf: boolean;
   created_at: string;
   updated_at: string;
@@ -26,6 +31,8 @@ export type CategoryCreateInput = {
   image_url?: string | null;
   position?: number;
   is_active?: boolean;
+  // Honoured only for top-level categories; children inherit the parent's range.
+  range?: CategoryRange;
 };
 
 export type CategoryUpdateInput = Partial<CategoryCreateInput>;

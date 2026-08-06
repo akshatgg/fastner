@@ -68,11 +68,12 @@ export const catalogKeys = {
   search: (q: string, limit: number) => ["catalog", "search", q, limit] as const,
 };
 
-/** Public storefront category tree (active categories only, no auth). */
-export function usePublicCategoryTree() {
+/** Public storefront category tree (active categories only, no auth). Pass a
+ *  `range` to limit it to one storefront range; omit it for the full tree. */
+export function usePublicCategoryTree(range?: "industrial" | "diy") {
   return useQuery({
-    queryKey: catalogKeys.publicTree,
-    queryFn: getPublicCategoryTree,
+    queryKey: [...catalogKeys.publicTree, range ?? "all"],
+    queryFn: () => getPublicCategoryTree(range),
   });
 }
 
