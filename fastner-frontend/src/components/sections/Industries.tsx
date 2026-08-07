@@ -83,7 +83,10 @@ export default function Industries() {
   return (
     <section
       id="industries"
-      className="relative overflow-hidden bg-sand-50 py-20 sm:py-26"
+      // No `overflow-hidden` here: it would disable the sticky heading column
+      // below. The grid/glow overlays are `absolute inset-0`, so they are
+      // already bounded by this section and need no clipping.
+      className="relative bg-sand-50 py-20 sm:py-26"
     >
       {/* Engineering grid, lifted by a soft light from the top-left. */}
       <div aria-hidden className="bg-grid-ink absolute inset-0" />

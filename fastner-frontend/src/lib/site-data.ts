@@ -2,7 +2,6 @@ import {
   Phone,
   Mail,
   MapPin,
-  ShoppingCart,
   MessagesSquare,
   PackageSearch,
   Warehouse,
@@ -265,7 +264,7 @@ export const AUTH_HIGHLIGHTS: AuthHighlight[] = [
   { Icon: Truck, label: "Fast nationwide shipping" },
 ];
 
-type HeroCta = { label: string; href: string; Icon: LucideIcon; className: string };
+type HeroCta = { label: string; href: string; className: string };
 /** Optional centered text overlaid in a slide's empty space (e.g. the fastener-ring banner). */
 type HeroCaption = { heading: string; sub?: string };
 export type HeroSlide = {
@@ -288,7 +287,6 @@ export const HERO_SLIDES: HeroSlide[] = [
     cta: {
       label: "Shop the Range",
       href: "#categories",
-      Icon: ShoppingCart,
       className: "bg-brand-500/85 ring-white/40 hover:bg-brand-500",
     },
   },
@@ -300,7 +298,6 @@ export const HERO_SLIDES: HeroSlide[] = [
     cta: {
       label: "Get Bulk Pricing",
       href: "#contact",
-      Icon: Phone,
       className: "bg-white/20 ring-white/50 hover:bg-white/35",
     },
   },
@@ -311,7 +308,6 @@ export const HERO_SLIDES: HeroSlide[] = [
     cta: {
       label: "Shop Fastener Kits",
       href: "#categories",
-      Icon: ShoppingCart,
       className: "bg-brand-500/85 ring-white/40 hover:bg-brand-500",
     },
   },
@@ -323,7 +319,6 @@ export const HERO_SLIDES: HeroSlide[] = [
     cta: {
       label: "Why Choose IBC",
       href: "/about-us",
-      Icon: ShieldCheck,
       className: "bg-white/20 ring-white/50 hover:bg-white/35",
     },
   },

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -23,6 +24,11 @@ import type { ProductSearchItem } from "@/features/catalog/types";
 import { useModeStore } from "@/lib/store/mode-store";
 import ProductReviews from "./ProductReviews";
 import ProductTabs from "./ProductTabs";
+
+/** Units per pack, used to state the bulk minimum in packs as well as pieces.
+ *  The catalog has no pack-size field yet — `b2b_min_qty` is in pieces — so
+ *  this is the one place to change if packs stop being 100. */
+const PACK_SIZE = 100;
 
 /** The spec key that actually holds a bullet list rather than a value. Matched
  *  case- and separator-insensitively, since it is authored in the seed data. */
@@ -271,9 +277,27 @@ export default function ProductView({ slug }: { slug: string }) {
                       )}
                     </div>
                     {isB2b ? (
-                      <p className="mt-1 text-sm font-medium text-brand-600">
-                        Bulk rate — minimum order {product.b2b_min_qty} pcs.
-                      </p>
+                      <div className="mt-4 border-t border-ink-100 pt-4">
+                        <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-ink-500">
+                          Minimum Order
+                        </p>
+                        <p className="mt-1 font-display text-lg font-bold uppercase text-ink-900">
+                          {product.b2b_min_qty}{" "}
+                          {product.b2b_min_qty === 1 ? "Pack" : "Packs"} (
+                          {(product.b2b_min_qty * PACK_SIZE).toLocaleString()}{" "}
+                          Screws)
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed text-ink-500">
+                          Buying in bulk? Get in touch with our team for
+                          quantity pricing and availability.
+                        </p>
+                        <Link
+                          href="/#contact"
+                          className="mt-4 inline-flex items-center gap-2 bg-brand-500 px-6 py-3 text-[13px] font-bold uppercase tracking-[0.1em] text-white transition-colors hover:bg-brand-600"
+                        >
+                          Get Bulk Pricing
+                        </Link>
+                      </div>
                     ) : (
                       product.price_b2b != null && (
                         <p className="mt-1 text-sm text-ink-500">
@@ -355,20 +379,32 @@ export default function ProductView({ slug }: { slug: string }) {
                   >
                     Or enquire about this product →
                   </Link>
+
+                  {/* Certification mark closes the buy column. The badge says
+                      what it is, so it carries no caption of its own. */}
+                  <div className="mt-8 border-t border-ink-100 pt-6">
+                    <Image
+                      src="/assets/ranges/iso-logo-633x375.png.webp"
+                      alt="ISO 9001:2015 certified company"
+                      width={633}
+                      height={375}
+                      className="h-16 w-auto"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Everything below the buy box — specs + drawing, the written
-                  description, and reviews — lives in one tabbed panel. */}
+              {/* Everything below the buy box — specs + drawing, the
+                  application notes, and reviews — lives in one tabbed panel. */}
               <ProductTabs
                 productName={product.name}
                 specs={specs}
-                details={
+                application={
                   product.description ? (
                     <ProductDescription text={product.description} />
                   ) : (
                     <p className="text-sm text-ink-400">
-                      No description recorded for this product yet.
+                      No application notes recorded for this product yet.
                     </p>
                   )
                 }

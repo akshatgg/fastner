@@ -8,12 +8,14 @@ import { ClipboardList, Info, MessageSquare } from "lucide-react";
  *  the diagram read together. */
 const DIMENSION_DIAGRAM = "/assets/ranges/SSCF-P.avif";
 
-type TabId = "reviews" | "technical" | "details";
+type TabId = "reviews" | "technical" | "application";
 
+// "Application" matches what the client's product sheet calls this copy — it
+// describes where the fastener gets used, not the product's attributes.
 const TABS: { id: TabId; label: string; icon: typeof Info }[] = [
   { id: "reviews", label: "Reviews", icon: MessageSquare },
   { id: "technical", label: "Technical Specification", icon: Info },
-  { id: "details", label: "Product Details", icon: ClipboardList },
+  { id: "application", label: "Application", icon: ClipboardList },
 ];
 
 /**
@@ -27,13 +29,13 @@ const TABS: { id: TabId; label: string; icon: typeof Info }[] = [
 export default function ProductTabs({
   productName,
   specs,
-  details,
+  application,
   reviews,
   reviewCount,
 }: {
   productName: string;
   specs: [string, unknown][];
-  details: ReactNode;
+  application: ReactNode;
   reviews: ReactNode;
   reviewCount?: number;
 }) {
@@ -121,18 +123,16 @@ export default function ProductTabs({
         </div>
       )}
 
-      {/* Product Details — the full written description. */}
-      {tab === "details" && (
+      {/* Application — where the fastener gets used. The tab already names
+          this, so the panel opens straight into the copy. */}
+      {tab === "application" && (
         <div
           role="tabpanel"
-          id="panel-details"
-          aria-labelledby="tab-details"
+          id="panel-application"
+          aria-labelledby="tab-application"
           className="pt-8"
         >
-          <h2 className="font-display text-xl font-bold uppercase leading-tight text-ink-900 sm:text-2xl">
-            {productName} Description
-          </h2>
-          <div className="mt-4">{details}</div>
+          {application}
         </div>
       )}
 
